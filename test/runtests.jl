@@ -58,7 +58,7 @@ end
 		if length(structs) == 0
 			inds = []
 		else
-			inds = union([a.brainstructure[s] for s in structs]...) |> sort
+			inds = union([a.brainstructure[s] for s in structs]...)
 		end
 		@test a[structs] == a.data[inds, :]
 	end

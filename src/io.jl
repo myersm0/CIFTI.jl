@@ -55,7 +55,7 @@ Use a vector of BrainStructure s as indices into the data matrix of a CiftiStruc
 """
 function Base.getindex(c::CiftiStruct, s::Vector{BrainStructure})
 	structs = intersect(keys(c.brainstructure), s)
-	inds = length(structs) == 0 ? [] : union([c.brainstructure[x] for x in s]...) |> sort
+	inds = length(structs) == 0 ? [] : union([c.brainstructure[x] for x in s]...)
 	c.data[inds, :]
 end
 
