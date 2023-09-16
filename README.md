@@ -21,11 +21,11 @@ The basic usage of `CIFTI.load` is demonstrated below. A `CiftiStruct` struct is
 
 ```
 x = CIFTI.load("my_cifti_file.dtseries.nii")
-x.data # access the data matrix
-x.brainstructure # access the dictionary of anatomical indices
+x.data                                         # access the data Matrix
+x.brainstructure                               # access the OrderedDict of anatomical indices
 ```
 
-Some convenience functions for indexing into the `data` matrix are also supplied, taking advantage of the BrainStructure enum types that constitute the keys of the CiftiStruct.brainstructure dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
+Some convenience functions for indexing into `data` are also supplied, taking advantage of the BrainStructure enum types that constitute the keys of the CiftiStruct.brainstructure dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
 
 ```
 x[L]   # return a matrix where the rows correspond to CORTEX_LEFT anatomical indices
@@ -35,8 +35,8 @@ x[LR]  # return a matrix where the rows correspond to left or right coritical in
 
 Or you can index into the data using a vector of arbitrary BrainStructure keys:
 ```
-x[[AMYGDALA_LEFT, CORTEX_LEFT, CEREBELLUM_RIGHT]]
-x[[CORTEX_LEFT, CEREBELLUM_RIGHT, AMYGDALA_LEFT]]
+x[[AMYGDALA_LEFT, AMYGDALA_RIGHT]]
+x[[AMYGDALA_RIGHT, AMYGDALA_LEFT]]
 ```
 Important note: order matters in the vector that you specify, so the two lines above will return matrix subsets of the same size but differently sorted.
 
