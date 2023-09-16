@@ -16,30 +16,30 @@ ground_truth = load(joinpath(data_dir, "fieldtrip_objects.jld"))
 tol = 1e-6
 
 function test_brainstructure(a::CIFTI.CiftiStruct, b::Dict)
-	if haskey(b, "brainstructure")
-		vals = filter(x -> x > 0, Int.(b["brainstructure"]))
-		ks = b["brainstructurelabel"][:]
-		length(ks) == length(a.brainstructure) || return false
-		temp = Dict([ks[i] => findall(vals .== i) for i in 1:length(ks)])
-		for k in ks
-			rng_a = a.brainstructure[eval(Meta.parse(k))]
-			rng_b = temp[k][1]:temp[k][end]
-			rng_a == rng_b || return false
-		end
-	else
-		length(a.brainstructure) == 0 || return false
-	end
-	return true
+    if haskey(b, "brainstructure")
+        vals = filter(x -> x > 0, Int.(b["brainstructure"]))
+        ks = b["brainstructurelabel"][:]
+        length(ks) == length(a.brainstructure) || return false
+        temp = Dict([ks[i] => findall(vals .== i) for i in 1:length(ks)])
+        for k in ks
+            rng_a = a.brainstructure[eval(Meta.parse(k))]
+            rng_b = temp[k][1]:temp[k][end]
+            rng_a == rng_b || return false
+        end
+    else
+        length(a.brainstructure) == 0 || return false
+    end
+    return true
 end
 
 @testset "CIFTI.jl" begin
     for filetype in filetypes
         a = CIFTI.load(joinpath(data_dir, "test.$filetype.nii"))
         b = ground_truth["$(filetype)_test"]
-		  @test test_brainstructure(a, b)
-		  inds_a = findall(isfinite.(a.data))
+          @test test_brainstructure(a, b)
+          inds_a = findall(isfinite.(a.data))
         inds_b = findall(isfinite.(b["data"]))
-		  @test inds_a == inds_b
+          @test inds_a == inds_b
         @test maximum(abs.(a.data[inds_a] .- b["data"][inds_b])) < tol
     end
 end
