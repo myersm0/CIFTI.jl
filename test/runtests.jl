@@ -17,7 +17,7 @@ tol = 1e-6
 
 function test_brainstructure(a::CIFTI.CiftiStruct, b::Dict)
     if haskey(b, "brainstructure")
-        vals = filter(x -> x > 0, Int.(b["brainstructure"]))
+        vals = filter(x -> Int(x) > 0, b["brainstructure"])
         ks = b["brainstructurelabel"][:]
         length(ks) == length(a.brainstructure) || return false
         temp = Dict([ks[i] => findall(vals .== i) for i in 1:length(ks)])
