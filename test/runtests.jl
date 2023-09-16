@@ -36,10 +36,10 @@ end
     for filetype in filetypes
         a = CIFTI.load(joinpath(data_dir, "test.$filetype.nii"))
         b = ground_truth["$(filetype)_test"]
-          @test test_brainstructure(a, b)
-          inds_a = findall(isfinite.(a.data))
+        @test test_brainstructure(a, b)
+        inds_a = findall(isfinite.(a.data))
         inds_b = findall(isfinite.(b["data"]))
-          @test inds_a == inds_b
+        @test inds_a == inds_b
         @test maximum(abs.(a.data[inds_a] .- b["data"][inds_b])) < tol
     end
 end

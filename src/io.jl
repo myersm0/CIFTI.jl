@@ -10,7 +10,7 @@ end
 
 struct CiftiStruct
     hdr::NiftiHeader
-     data::Matrix
+    data::Matrix
     brainstructure::OrderedCollections.OrderedDict{BrainStructure, UnitRange}
     function CiftiStruct(hdr, data, brainstructure)
         dims = size(data)
@@ -47,10 +47,10 @@ function get_cifti_data(fid::IOStream, hdr::NiftiHeader)
     data = zeros(UInt8, bytes_to_read)
     readbytes!(fid, data, bytes_to_read)
     @chain data begin
-         reinterpret(hdr.dtype, _) 
-         reshape(_, (hdr.nrows, hdr.ncols)) 
-         transpose
-     end
+        reinterpret(hdr.dtype, _) 
+        reshape(_, (hdr.nrows, hdr.ncols)) 
+        transpose
+    end
 end
 
 function extract_xml(fid::IOStream, hdr::NiftiHeader)::EzXML.Node
@@ -70,7 +70,8 @@ function extract_xml(fid::IOStream, hdr::NiftiHeader)::EzXML.Node
 end
 
 function parse_brainmodel(
-        docroot::EzXML.Node)::OrderedCollections.OrderedDict{BrainStructure, UnitRange}
+        docroot::EzXML.Node
+    )::OrderedCollections.OrderedDict{BrainStructure, UnitRange}
     brainmodel_nodes = findall("//BrainModel", docroot)
     brainstructure = OrderedDict{BrainStructure, UnitRange}()
     for node in brainmodel_nodes
@@ -103,7 +104,7 @@ function load(filename::String)::CiftiStruct
         hdr = get_nifti2_hdr(fid)
         data = get_cifti_data(fid, hdr)
         brainstructure = get_brainstructure(fid, hdr)
-          CiftiStruct(hdr, data, brainstructure)
+        CiftiStruct(hdr, data, brainstructure)
     end
 end
 
