@@ -38,7 +38,7 @@ const nifti_hdr_size = 540
 const L = CORTEX_LEFT
 const R = CORTEX_RIGHT
 const LR = [L, R]
-export L, R
+export L, R, LR
 
 # dict to map integer codes representing data type found in the nifti2 header
 # (note: not listing certain of those codes that aren't primitive Julia types)
