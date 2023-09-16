@@ -1,5 +1,12 @@
+
 module CIFTI
 
-# Write your package code here.
+using EzXML
+using Chain
+using OrderedCollections
+
+include("cifti_spec.jl")
+include("io.jl")
 
 end
+
