@@ -11,7 +11,7 @@ end
 struct CiftiStruct
     hdr::NiftiHeader
     data::Matrix
-    brainstructure::OrderedCollections.OrderedDict{BrainStructure, UnitRange}
+    brainstructure::OrderedDict{BrainStructure, UnitRange}
     function CiftiStruct(hdr, data, brainstructure)
         dims = size(data)
         @assert(hdr.nrows == dims[2], "Expected $(hdr.nrows) rows, found $(dims[2])")
@@ -60,12 +60,12 @@ function extract_xml(fid::IOStream, hdr::NiftiHeader)::EzXML.Node
     readbytes!(fid, bytes, hdr.vox_offset - nifti_hdr_size)
     filter!(.!iszero, bytes) # the below will error if we don't remove null bytes
     start_at = 1 + findfirst(bytes .== UInt8('\n')) # xml begins after 1st newline
-    Chain.@chain begin
+    @chain begin
         bytes[start_at:end] 
         Char.(_) 
         join 
-        EzXML.parsexml 
-        EzXML.root
+        parsexml 
+        root
     end
 end
 
@@ -76,7 +76,7 @@ function parse_brainmodel(
     brainstructure = OrderedDict{BrainStructure, UnitRange}()
     for node in brainmodel_nodes
         struct_name = 
-              @chain node["BrainStructure"] begin
+            @chain node["BrainStructure"] begin
                 replace(_, r"CIFTI_STRUCTURE_" => "")
                 Meta.parse
                 eval
