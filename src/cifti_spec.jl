@@ -37,6 +37,7 @@ const nifti_hdr_size = 540
 # we refer to left and right cortex so often that it's worth having a shorthand
 const L = CORTEX_LEFT
 const R = CORTEX_RIGHT
+const LR = [L, R]
 export L, R
 
 # dict to map integer codes representing data type found in the nifti2 header
