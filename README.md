@@ -4,7 +4,7 @@ This Julia package supplies a basic function `CIFTI.load` for reading files of t
 
 The intended use case is for simple, fast reading of CIFTI data. No attempt has been made to comprehensively support the CIFTI specification. For more complex use cases in Julia, I recommend instead using Julia's cross-language interoperability to take advantage of one of several more comprehensive implementations (see the `cifti` and `ciftiTools` R packages, `nibabel` in Python, etc).
 
-The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample and I'll add support for it.
+The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized, of course, and containing only synthetic data) and I'll add support for it.
 
 ## Installation
 Within Julia,
