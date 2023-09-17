@@ -11,7 +11,7 @@ struct NiftiHeader
 end
 
 struct CiftiStruct
-	hdr::NiftiHeader
+	_hdr::NiftiHeader
 	data::Matrix
 	brainstructure::OrderedDict{BrainStructure, UnitRange}
 	function CiftiStruct(hdr, data, brainstructure)
