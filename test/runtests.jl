@@ -6,10 +6,10 @@ data_dir = joinpath(dirname(@__FILE__), "data")
 filetypes = ["dscalar", "dtseries", "pconn", "ptseries"]
 
 """
-"ground truth" contains objects generated in MATLAB with the FieldTrip toolbox
+`ground_truth` contains objects generated in MATLAB with the [FieldTrip toolbox]
 (https://www.fieldtriptoolbox.org/) from the same cifti files as are contained
 here in the `./data/` folder. Files read in via *this* Julia package however
-will differ slightly from "ground truth" because we are reading cifti files in
+will differ slightly from `ground_truth` because we are reading cifti files in
 their native format (Float32) vs the 64-bit double-precision used in MATLAB
 """
 ground_truth = load(joinpath(data_dir, "fieldtrip_objects.jld"))
@@ -45,8 +45,9 @@ end
 		@test size(a) == size(a.data)
 
 		# for convenience in below tests, remove NaNs now
-		a.data[.!isfinite.(a.data)] .= 0
-		b["data"][.!isfinite.(a.data)] .= 0
+		inds = .!isfinite.(a.data)
+		a.data[inds] .= 0
+		b["data"][inds] .= 0
 
 		structs = collect(keys(a.brainstructure))
 		for s in structs
@@ -63,6 +64,4 @@ end
 		@test a[structs] == a.data[inds, :]
 	end
 end
-
-
 
