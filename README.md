@@ -7,7 +7,7 @@ The intended use case is for simple, fast reading of CIFTI data. No attempt has 
 The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized, of course, and containing only synthetic data) and I'll add support for it.
 
 ## Installation
-Within Julia,
+Within Julia:
 ```
 using Pkg
 Pkg.add(url = "http://github.com/myersm0/CIFTI.jl")
@@ -15,22 +15,21 @@ Pkg.add(url = "http://github.com/myersm0/CIFTI.jl")
 
 ## Usage
 The basic usage of `CIFTI.load` is demonstrated below. A `CiftiStruct` struct is returned, containing:
-- `hdr`: a rudimentary header containing low-level information
 - `data`: a numeric matrix of whatever data type is specified in the cifti file header
 - `brainstructure`: an OrderedDict of indices into anatomical structures as parsed from the CIFTI file's internal XML data
 
 ```
-x = CIFTI.load("my_cifti_file.dtseries.nii")
-x.data                                         # access the data Matrix
-x.brainstructure                               # access the OrderedDict of anatomical indices
+x = CIFTI.load(filename)
+x.data                   # access the data Matrix
+x.brainstructure         # access the OrderedDict of anatomical indices
 ```
 
 Some convenience functions for indexing into `data` are also supplied, taking advantage of the BrainStructure enum types that constitute the keys of the CiftiStruct.brainstructure dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
 
 ```
-x[L]   # return a matrix where the rows correspond to CORTEX_LEFT anatomical indices
-x[R]   # return a matrix where the rows correspond to CORTEX_RIGHT anatomical indices
-x[LR]  # return a matrix where the rows correspond to left or right coritical indices
+x[L]   # return a Matrix where the rows correspond to CORTEX_LEFT anatomical indices
+x[R]   # return a Matrix where the rows correspond to CORTEX_RIGHT anatomical indices
+x[LR]  # return a Matrix where the rows correspond to left or right coritical indices
 ```
 
 Or you can index into the data using a vector of arbitrary BrainStructure keys:
