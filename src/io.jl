@@ -29,7 +29,7 @@ struct CiftiStruct
 	end
 end
 
-""""
+"""
     size(c::CiftiStruct)
 
 Return the dimensions of the data matrix component of a CiftiStruct
@@ -130,9 +130,8 @@ get_brainstructure(fid::IOStream, hdr::NiftiHeader) =
 """
     load(filename)
 
-Read a CIFTI file. Returns a CiftiStruct, a struct composed of the data matrix `data`,
-a rudimentary header `hdr`, and a dictionary of anatomical indices `brainstructure`
-for indexing into the data
+Read a CIFTI file. Returns a `CiftiStruct`, composed of the data matrix `data`
+and a dictionary of anatomical indices `brainstructure` for indexing into the data
 """
 function load(filename::String)::CiftiStruct
 	@assert(isfile(filename), "$filename doesn't exist")
