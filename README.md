@@ -10,7 +10,7 @@ The `CIFTI.load` function supplied here should work for any of the common CIFTI 
 Within Julia:
 ```
 using Pkg
-Pkg.add(url = "http://github.com/myersm0/CIFTI.jl")
+Pkg.add("CIFTI")
 ```
 
 ## Usage
