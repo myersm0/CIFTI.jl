@@ -10,24 +10,33 @@ struct NiftiHeader
 	vox_offset::Int64
 end
 
-struct CiftiStruct
+struct CiftiStruct{T1, T2}
 	_hdr::NiftiHeader
 	data::Matrix
 	brainstructure::OrderedDict{BrainStructure, UnitRange}
-	function CiftiStruct(hdr, data, brainstructure)
-		dims = size(data)
-		@assert(hdr.nrows == dims[2], "Expected $(hdr.nrows) rows, found $(dims[2])")
-		@assert(hdr.ncols == dims[1], "Expected $(hdr.ncols) columns, found $(dims[1])")
-		if length(brainstructure) > 0
-			brainstruct_max = brainstructure[collect(keys(brainstructure))[end]][end]
-			@assert(
-				brainstruct_max in dims,
-				"Max index of brainstructure should match data's spatial dimension size"
-			)
-		end
-		new(hdr, data, brainstructure)
-	end
 end
+
+function CiftiStruct{T1, T2}(
+		hdr, data, brainstructure
+	) where {T1 <: IndexType, T2 <: IndexType}
+	dims = size(data)
+	@assert(hdr.nrows == dims[2], "Expected $(hdr.nrows) rows, found $(dims[2])")
+	@assert(hdr.ncols == dims[1], "Expected $(hdr.ncols) columns, found $(dims[1])")
+	if length(brainstructure) > 0
+		brainstruct_max = brainstructure[collect(keys(brainstructure))[end]][end]
+		@assert(
+			brainstruct_max == dims[1],
+			"Max index of brainstructure should match data's spatial dimension size"
+		)
+	end
+	CiftiStruct{T1, T2}(hdr, data, brainstructure)
+end
+
+CiftiStruct(hdr, data, brainstructure, dimord, ::DontTranspose) =
+	CiftiStruct{dimord[1], dimord[2]}(hdr, data, brainstructure)
+	
+CiftiStruct(hdr, data, brainstructure, dimord, ::DoTranspose) =
+	CiftiStruct{dimord[2], dimord[1]}(hdr, transpose(data), brainstructure)
 
 """
     size(c::CiftiStruct)
@@ -43,9 +52,20 @@ end
 
 Use BrainStructure s as indices into the data matrix of a CiftiStruct
 """
-function Base.getindex(c::CiftiStruct, s::BrainStructure)
+
+function Base.getindex(
+		c::CiftiStruct{BRAIN_MODELS(), T}, s::BrainStructure
+	) where T
 	inds = haskey(c.brainstructure, s) ? c.brainstructure[s] : []
 	c.data[inds, :]
+end
+
+function Base.getindex(
+		c::CiftiStruct{BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
+	)
+	inds1 = haskey(c.brainstructure, s1) ? c1.brainstructure[s] : []
+	inds2 = haskey(c.brainstructure, s2) ? c2.brainstructure[s] : []
+	c.data[inds, inds]
 end
 
 """
@@ -85,7 +105,6 @@ function get_cifti_data(fid::IOStream, hdr::NiftiHeader)
 	@chain data begin
 		reinterpret(hdr.dtype, _) 
 		reshape(_, (hdr.nrows, hdr.ncols)) 
-		transpose
 	end
 end
 
@@ -105,7 +124,35 @@ function extract_xml(fid::IOStream, hdr::NiftiHeader)::EzXML.Node
 	end
 end
 
-function parse_brainmodel(
+function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
+	index_mappings = findall("//MatrixIndicesMap", docroot)
+	@assert length(index_mappings) in (1, 2)
+	dimord = Vector{IndexType}(undef, 2)
+	for node in index_mappings
+		interpretation = 
+			@chain node["IndicesMapToDataType"] begin
+				replace(_, r"CIFTI_INDEX_TYPE_" => "")
+				Meta.parse
+				eval
+			end
+		temp = node["AppliesToMatrixDimension"]
+		if temp == "0,1" # if both dimensions are specified at once ...
+			dimord[1] = interpretation()
+			dimord[2] = interpretation()
+			return dimord
+		else # otherwise if only one dimension is specified ...
+			try
+				applies_to = parse(Int, temp) + 1
+				dimord[applies_to] = interpretation()
+			catch
+				error("Unable to parse dimension order")
+			end
+		end
+	end
+	return dimord
+end
+
+function get_brainstructure(
 		docroot::EzXML.Node
 	)::OrderedCollections.OrderedDict{BrainStructure, UnitRange}
 	brainmodel_nodes = findall("//BrainModel", docroot)
@@ -124,9 +171,6 @@ function parse_brainmodel(
 	brainstructure
 end
 
-get_brainstructure(fid::IOStream, hdr::NiftiHeader) = 
-	extract_xml(fid, hdr) |> parse_brainmodel
-
 """
     load(filename)
 
@@ -138,8 +182,10 @@ function load(filename::String)::CiftiStruct
 	open(filename, "r") do fid
 		hdr = get_nifti2_hdr(fid)
 		data = get_cifti_data(fid, hdr)
-		brainstructure = get_brainstructure(fid, hdr)
-		CiftiStruct(hdr, data, brainstructure)
+		xml = extract_xml(fid, hdr)
+		brainstructure = get_brainstructure(xml)
+		dimord = get_dimord(xml)
+		CiftiStruct(hdr, data, brainstructure, dimord, TranspositionStyle(dimord...))
 	end
 end
 
