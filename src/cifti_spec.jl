@@ -1,4 +1,8 @@
 
+export BrainStructure, L, R, LR
+
+const nifti_hdr_size = 540
+
 # from discourse.julialang.org/t/export-enum/5396
 macro exported_enum(name, args...)
 	esc(quote
@@ -30,15 +34,11 @@ export exported_enum
 	ALL_WHITE_MATTER, ALL_GREY_MATTER,
 	OTHER
 )
-export BrainStructure
-
-const nifti_hdr_size = 540
 
 # we refer to left and right cortex so often that it's worth having a shorthand
 const L = CORTEX_LEFT
 const R = CORTEX_RIGHT
 const LR = [L, R]
-export L, R, LR
 
 # dict to map integer codes representing data type found in the nifti2 header
 # (note: not listing certain of those codes that aren't primitive Julia types)
