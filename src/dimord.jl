@@ -8,7 +8,6 @@ struct PARCELS <: IndexType end
 struct SERIES <: IndexType end
 struct SCALARS <: IndexType end
 struct TIME_POINTS <: IndexType end
-
 # note that TIME_POINTS is not mentioned in the specification,
 # but I've found it exists in XML data from the MSC dataset
 
@@ -24,8 +23,10 @@ abstract type TranspositionStyle end
 struct DoTranspose <: TranspositionStyle end
 struct DontTranspose <: TranspositionStyle end
 
-TranspositionStyle(::MappingStyle, ::MappingStyle) = DontTranspose()
+# we only want to transpose in the event that there's a spatial index along the 2nd dim
+# because we will conventionally want to have that on the rows instead
 TranspositionStyle(::IsOtherIndex, ::IsSpatialIndex) = DoTranspose()
+TranspositionStyle(::MappingStyle, ::MappingStyle) = DontTranspose()
 
 TranspositionStyle(i1::IndexType, i2::IndexType) = 
 	TranspositionStyle(MappingStyle(i1), MappingStyle(i2))
