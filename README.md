@@ -24,6 +24,8 @@ x.data                   # access the data Matrix
 x.brainstructure         # access the OrderedDict of anatomical indices
 ```
 
+If the file is stored on disk with spatial dimensions (either parcels or "grayordinates") along the columns but scalars or series elements along the rows, the data matrix will be transposed for the sake of consistent representation. In other words, each row will represent a spatial element (a grayordinate or a parcel, for example), if any.
+
 Some convenience functions for indexing into `data` are also supplied, taking advantage of the BrainStructure enum types that constitute the keys of the CiftiStruct.brainstructure dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
 
 ```
