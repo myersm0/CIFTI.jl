@@ -6,6 +6,9 @@ The intended use case is for simple, fast reading of CIFTI data. No attempt has 
 
 The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized, of course, and containing only synthetic data) and I'll add support for it.
 
+## Performance
+Due to the row major of 
+
 ## Installation
 Within Julia:
 ```

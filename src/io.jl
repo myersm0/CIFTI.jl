@@ -61,11 +61,11 @@ function Base.getindex(
 end
 
 function Base.getindex(
-		c::CiftiStruct{BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
+		c::CiftiStruct{CIFTI.BRAIN_MODELS(), CIFTI.BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
 	)
-	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s] : []
-	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s] : []
-	c.data[inds, inds]
+	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s1] : []
+	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s2] : []
+	c.data[inds1, inds2]
 end
 
 """
