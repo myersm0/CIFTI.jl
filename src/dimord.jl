@@ -9,6 +9,9 @@ struct SERIES <: IndexType end
 struct SCALARS <: IndexType end
 struct TIME_POINTS <: IndexType end
 
+# note that TIME_POINTS is not mentioned in the specification,
+# but I've found it exists in XML data from the MSC dataset
+
 abstract type MappingStyle end
 struct IsSpatialIndex <: MappingStyle end
 struct IsOtherIndex <: MappingStyle end
@@ -26,12 +29,4 @@ TranspositionStyle(::IsOtherIndex, ::IsSpatialIndex) = DoTranspose()
 
 TranspositionStyle(i1::IndexType, i2::IndexType) = 
 	TranspositionStyle(MappingStyle(i1), MappingStyle(i2))
-
-abstract type DimOrd end
-abstract type PosX <: DimOrd end
-abstract type PosPos <: DimOrd end
-
-Dimord(::IsSpatialIndex, ::IsSpatialIndex) = PosPos()
-Dimord(::IsSpatialIndex, ::IsOtherIndex) = PosX()
-
 

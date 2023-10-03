@@ -63,5 +63,10 @@ end
 		end
 		@test a[structs] == a.data[inds, :]
 	end
+
+	# another file to test; this is one I found that has brainordinates along the rows
+	# so it doesn't need to be transposed
+	dts = CIFTI.load(joinpath(data_dir, "sub-MSC01_test.dtseries.nii"))
+	@test size(dts[LR]) == (59412, 5)
 end
 
