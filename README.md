@@ -9,10 +9,10 @@ The `CIFTI.load` function supplied here should work for any of the common CIFTI 
 ## Performance
 Due to Julia's column major storage convention, most CIFTI files will need to be transposed in order to store them in the orientation that users will probably expect. If you don't need to transpose, reading is extremely fast, and if you do, performance suffers but it's still quite fast. Here are some benchmarks achieved on my Macbook Pro:
 |                                                |    |
-|------------------------------------------------|----|
+|------------------------------------------------|---:|
 |Read a dconn of size 59412 x 59412 (no tranpose)|75 s|
-|Read a dtseries of size 64k x 8k (no transpose) | 2 s|
-|Read a dtseries of size 64k x 8k (w/ transpose) | 5 s|
+|Read a dtseries of size 64k x 8k (no transpose) |2 s|
+|Read a dtseries of size 64k x 8k (w/ transpose) |5 s|
 
 ## Installation
 Within Julia:
