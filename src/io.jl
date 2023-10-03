@@ -63,8 +63,8 @@ end
 function Base.getindex(
 		c::CiftiStruct{BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
 	)
-	inds1 = haskey(c.brainstructure, s1) ? c1.brainstructure[s] : []
-	inds2 = haskey(c.brainstructure, s2) ? c2.brainstructure[s] : []
+	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s] : []
+	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s] : []
 	c.data[inds, inds]
 end
 
