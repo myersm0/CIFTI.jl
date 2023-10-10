@@ -61,7 +61,7 @@ function Base.getindex(
 end
 
 function Base.getindex(
-		c::CiftiStruct{CIFTI.BRAIN_MODELS(), CIFTI.BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
+		c::CiftiStruct{BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
 	)
 	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s1] : []
 	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s2] : []
@@ -114,14 +114,9 @@ function extract_xml(fid::IOStream, hdr::NiftiHeader)::EzXML.Node
 	bytes = zeros(UInt8, hdr.vox_offset - nifti_hdr_size)
 	readbytes!(fid, bytes, hdr.vox_offset - nifti_hdr_size)
 	filter!(.!iszero, bytes) # the below will error if we don't remove null bytes
-	start_at = 1 + findfirst(bytes .== UInt8('\n')) # xml begins after 1st newline
-	@chain begin
-		bytes[start_at:end] 
-		Char.(_) 
-		join 
-		parsexml 
-		root
-	end
+	chars = Char.(bytes) |> join
+	start_at = findfirst("<CIFTI Version=", chars)[1]
+	chars[start_at:end] |> parsexml |> root
 end
 
 function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
