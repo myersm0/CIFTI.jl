@@ -6,6 +6,8 @@ The intended use case is for simple, fast reading of CIFTI data. No attempt has 
 
 The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized, of course, and containing only synthetic data) and I'll add support for it.
 
+Version 1.2 introduces an experimental feature, `CIFTI.save`, to save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk. Due to optional matrix transpositions and to conventions of row major versus column major order, it's tricky to ensure that data is written to disk in the right order and orientation in all cases, so please verify that it works as expected in your environment.
+
 ## Performance
 Due to Julia's column major storage convention, most CIFTI files will need to be transposed in order to store them in the orientation that users will probably expect. If you don't need to transpose, reading is extremely fast, and if you do, performance suffers but it's still quite fast. Here are some benchmarks achieved on my Macbook Pro:
 |                                                |    |
@@ -48,6 +50,17 @@ x[[AMYGDALA_LEFT, AMYGDALA_RIGHT]]
 x[[AMYGDALA_RIGHT, AMYGDALA_LEFT]]
 ```
 Important note: order matters in the vector that you specify, so the two lines above will return matrix subsets of the same size but differently sorted.
+
+As of version 1.2, data from a `CiftiStruct` or `Matrix` can be written to disk by specifying a `template`, i.e. an existing CIFTI file that has the desired output space. A copy of `template` will be created on disk, with its data component replaced with the new data that you supply. See the note in the introduction, however, about this function's experimental status, and be sure to verify that outputs are oriented correctly.
+```
+output_path = "my_output_filename.dtseries.nii"
+template_path = "path_to_an_existing_cifti_file.dtseries.nii" # NIFTI-2 header and XML data from this will be copied
+CIFTI.save(output_path, x; template = template_path)
+
+# it also works if you pass a Matrix instead of a CiftiStruct:
+my_matrix = x.data
+CIFTI.save(output_path, my_matrix; template = template_path)
+```
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://myersm0.github.io/CIFTI.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://myersm0.github.io/CIFTI.jl/dev/)
