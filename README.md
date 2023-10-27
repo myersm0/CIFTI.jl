@@ -35,10 +35,10 @@ x.brainstructure         # access the OrderedDict of anatomical indices
 ```
 
 When reading in a CIFTI file, transposition will occur or not occur according to the following logic: 
-- If the file is stored on disk with spatial dimensions (either parcels or "grayordinates") along the columns but scalars or series elements along the rows, the data matrix will be transposed for the sake of consistent representation.
+- If the file is stored on disk with spatial dimensions (either parcels or "grayordinates") along the columns but scalars or series elements along the rows (such as timepoints), the data matrix will be transposed for the sake of consistent representation.
 - If the rows and columns *both* represent spatial elements, such as in connectivity matrices (pconns and dconns), then no transposition will be done, in part to avoid the cost of transposing large data in those cases. It is expected in these cases that you'll have a symmetric connectivity matrix, so transposition will not matter; but if this is not the case for you for some reason, then pay attention to the orientation and make sure to do any transposing yourself if necessary.
 
-In other words: data will be transposed if it's necessary in order to ensure that there's a spatial mapping along the *rows*.
+In other words: data will be transposed if it's necessary in order to ensure that there's a spatial mapping along the *rows*, so that they can then be indexed into in a consistent manner.
 
 Some convenience functions for indexing into `data` are also supplied, taking advantage of the BrainStructure enum types that constitute the keys of the CiftiStruct.brainstructure dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
 
