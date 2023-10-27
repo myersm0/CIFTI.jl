@@ -60,8 +60,8 @@ end
 		tempfile = "temp.$filetype.nii"
 
 		CIFTI.save(tempfile, a; template = filename)
-		d = CIFTI.load(tempfile)
-		@test maximum(abs.(d.data[inds_a] .- a.data[inds_a])) < tol
+		c = CIFTI.load(tempfile)
+		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
 
 		mat = deepcopy(a.data)
 		CIFTI.save(tempfile, mat; template = filename)
