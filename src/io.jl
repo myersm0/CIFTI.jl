@@ -184,3 +184,68 @@ function load(filename::String)::CiftiStruct
 	end
 end
 
+"""
+    save(dest, c; template)
+
+Save `c::CiftiStruct` to `dest::String` by copying the CIFTI header content from
+`template`. `template`'s dimensions and index mappings must match those of the
+input data. 
+
+Instead of a `CiftiStruct`, argument `c` may also be a `Vector` or `Matrix`.
+"""
+function save(dest::String, c::Union{CiftiStruct, AbstractArray}; template::String)
+	isfile(template) || error("File $template does not exist")
+	fid = open(template, "r")
+	seek(fid, 0)
+	hdr = get_nifti2_hdr(fid)
+	xml = extract_xml(fid, hdr)
+	template_dimord = get_dimord(xml)
+	outdims = (hdr.nrows, hdr.ncols)
+	seek(fid, 0)
+	header_content = zeros(UInt8, hdr.vox_offset)
+	readbytes!(fid, header_content, hdr.vox_offset)
+	close(fid)
+
+	matrix_out = compare_mappings(c, template_dimord, outdims)
+	eltype(matrix_out) == hdr.dtype || error("Inconsistent matrix eltypes")
+
+	open(dest, "w") do fid
+		write(fid, header_content)
+		write(fid, matrix_out)
+	end
+end
+
+function compare_mappings(
+		c::CiftiStruct{T1, T2}, template_dimord::Vector{IndexType}, template_dims::Tuple
+	)::Matrix where {T1, T2}
+	input_mappings = (MappingStyle(T1), MappingStyle(T2))
+	output_mappings = (MappingStyle(template_dimord[1]), MappingStyle(template_dimord[2]))
+	if input_mappings == output_mappings
+		matrix_out = c.data
+	elseif input_mappings == reverse(output_mappings)
+		matrix_out = c.data'
+	else
+		error("Dimension mappings of outmap are inconsistent with template")
+	end
+	outdims = size(matrix_out)
+	outdims == template_dims || error(DimensionMismatch)
+	return matrix_out
+end
+
+function compare_mappings(
+		c::AbstractArray, template_dimord::Vector{IndexType}, template_dims::Tuple
+	)::Matrix
+	input_dims = size(c)
+	if input_dims == template_dims
+		return c
+	elseif input_dims == reverse(template_dims)
+		return c'
+	elseif length(input_dims) == 1 && input_dims[1] == prod(template_dims)
+		return reshape(c, (input_dims[1], 1))
+	else
+		error(DimensionMismatch)
+	end
+end
+
+
+
