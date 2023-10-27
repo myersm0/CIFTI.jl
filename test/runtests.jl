@@ -3,7 +3,16 @@ using Test
 using JLD
 
 data_dir = joinpath(dirname(@__FILE__), "data")
-filetypes = ["dscalar", "dtseries", "pconn", "ptseries"]
+
+files_to_test = [
+	"test.dscalar.nii",
+	"test.dtseries.nii",
+	"test.pconn.nii",
+	"test.ptseries.nii",
+	"sub-MSC01_test.dtseries.nii"
+]
+# the latter file is one I found that has brainordinates along the rows
+# so it doesn't need to be transposed
 
 """
 `ground_truth` contains objects generated in MATLAB with the [FieldTrip toolbox]
@@ -33,21 +42,40 @@ function test_brainstructure(a::CIFTI.CiftiStruct, b::Dict)
 end
 
 @testset "CIFTI.jl" begin
-	for filetype in filetypes
-		a = CIFTI.load(joinpath(data_dir, "test.$filetype.nii"))
-		b = deepcopy(ground_truth["$(filetype)_test"])
-		@test test_brainstructure(a, b)
+	for filename in files_to_test
+		filename = joinpath(data_dir, filename)
+		filetype = replace(filename, r".*\.([a-z]+).nii$" => s"\1")
+		a = CIFTI.load(filename)
 		inds_a = findall(isfinite.(a.data))
-		inds_b = findall(isfinite.(b["data"]))
-		@test inds_a == inds_b
-		@test maximum(abs.(a.data[inds_a] .- b["data"][inds_b])) < tol
+
+		if isnothing(match(r"MSC01", filename))
+			b = deepcopy(ground_truth["$(filetype)_test"])
+			@test test_brainstructure(a, b)
+			inds_b = findall(isfinite.(b["data"]))
+			@test inds_a == inds_b
+			@test maximum(abs.(a.data[inds_a] .- b["data"][inds_b])) < tol
+		end
+
+		if filetype in ["dtseries", "dscalar", "dlabel"]
+			@test size(a[LR], 1) == size(a[L], 1) + size(a[R], 1) == 59412
+		end
+
+		mat = deepcopy(a.data)
+		CIFTI.save("temp.$filetype.nii", mat; template = filename)
+		c = CIFTI.load("temp.$filetype.nii")
+		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
+
+		CIFTI.save("temp.$filetype.nii", a; template = filename)
+		d = CIFTI.load("temp.$filetype.nii")
+		@test maximum(abs.(d.data[inds_a] .- a.data[inds_a])) < tol
+
+		rm("temp.$filetype.nii")
 
 		@test size(a) == size(a.data)
 
 		# for convenience in below tests, remove NaNs now
 		inds = .!isfinite.(a.data)
 		a.data[inds] .= 0
-		b["data"][inds] .= 0
 
 		structs = collect(keys(a.brainstructure))
 		for s in structs
@@ -63,10 +91,5 @@ end
 		end
 		@test a[structs] == a.data[inds, :]
 	end
-
-	# another file to test; this is one I found that has brainordinates along the rows
-	# so it doesn't need to be transposed
-	dts = CIFTI.load(joinpath(data_dir, "sub-MSC01_test.dtseries.nii"))
-	@test size(dts[LR]) == (59412, 5)
 end
 
