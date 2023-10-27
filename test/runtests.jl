@@ -48,6 +48,7 @@ end
 		a = CIFTI.load(filename)
 		inds_a = findall(isfinite.(a.data))
 
+		# the MSC01 file is not included in the ground_truth jld object
 		if isnothing(match(r"MSC01", filename))
 			b = deepcopy(ground_truth["$(filetype)_test"])
 			@test test_brainstructure(a, b)
@@ -56,22 +57,23 @@ end
 			@test maximum(abs.(a.data[inds_a] .- b["data"][inds_b])) < tol
 		end
 
+		tempfile = "temp.$filetype.nii"
+
+		CIFTI.save(tempfile, a; template = filename)
+		d = CIFTI.load(tempfile)
+		@test maximum(abs.(d.data[inds_a] .- a.data[inds_a])) < tol
+
+		mat = deepcopy(a.data)
+		CIFTI.save(tempfile, mat; template = filename)
+		c = CIFTI.load(tempfile)
+		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
+
+		rm(tempfile)
+
+		@test size(a) == size(a.data)
 		if filetype in ["dtseries", "dscalar", "dlabel"]
 			@test size(a[LR], 1) == size(a[L], 1) + size(a[R], 1) == 59412
 		end
-
-		mat = deepcopy(a.data)
-		CIFTI.save("temp.$filetype.nii", mat; template = filename)
-		c = CIFTI.load("temp.$filetype.nii")
-		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
-
-		CIFTI.save("temp.$filetype.nii", a; template = filename)
-		d = CIFTI.load("temp.$filetype.nii")
-		@test maximum(abs.(d.data[inds_a] .- a.data[inds_a])) < tol
-
-		rm("temp.$filetype.nii")
-
-		@test size(a) == size(a.data)
 
 		# for convenience in below tests, remove NaNs now
 		inds = .!isfinite.(a.data)
