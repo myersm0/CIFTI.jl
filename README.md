@@ -1,10 +1,10 @@
 # CIFTI
 
-This Julia package supplies a basic function `CIFTI.load` for reading files of the CIFTI-2 format (https://www.nitrc.org/projects/cifti) for fMRI data, along with some convenience functions for indexing into the data matrix.
+This Julia package supplies functions `CIFTI.load` and `CIFTI.save` for reading and writing files of the CIFTI-2 format (https://www.nitrc.org/projects/cifti) for fMRI data, along with some convenience functions for indexing into the data matrix.
 
 The intended use case is for simple, fast reading of CIFTI data. No attempt has been made to comprehensively support the CIFTI specification. For more complex use cases in Julia, I recommend instead using Julia's cross-language interoperability to take advantage of one of several more comprehensive implementations (see the `cifti` and `ciftiTools` R packages, `nibabel` in Python, etc).
 
-The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized, of course, and containing only synthetic data) and I'll add support for it.
+The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized and containing only synthetic data) and I'll add support for it.
 
 Version 1.2 introduces an experimental feature, `CIFTI.save`, to save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk. Due to optional matrix transpositions and to conventions of row major versus column major order, it's tricky to ensure that data is written to disk in the right order and orientation in all cases, so please verify that it works as expected in your environment.
 
@@ -38,9 +38,9 @@ When reading in a CIFTI file, transposition will occur or not occur according to
 - If the file is stored on disk with spatial dimensions (either parcels or "grayordinates") along the columns but scalars or series elements along the rows (such as timepoints), the data matrix will be transposed for the sake of consistent representation.
 - If the rows and columns *both* represent spatial elements, such as in connectivity matrices (pconns and dconns), then no transposition will be done, in part to avoid the cost of transposing large data in those cases. It is expected in these cases that you'll have a symmetric connectivity matrix, so transposition will not matter; but if this does not hold true for you for some reason, then pay attention to the orientation and make sure to do any transposing yourself if necessary.
 
-In other words: data will be transposed if it's necessary in order to ensure that there's a spatial mapping along the *rows*, so that they can then be indexed into in a consistent manner.
+In other words: data will be transposed if it's necessary in order to ensure that there's a spatial mapping along the *rows*, so that indexing can occur in a consistent manner.
 
-Some convenience functions for indexing into `data` are also supplied, taking advantage of the BrainStructure enum types that constitute the keys of the CiftiStruct.brainstructure dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
+Some convenience functions for indexing into `data` are also supplied, taking advantage of the `BrainStructure` enum types that constitute the keys of the `CiftiStruct.brainstructure` dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
 
 ```
 x[L]   # return a Matrix where the rows correspond to CORTEX_LEFT anatomical indices
@@ -48,21 +48,21 @@ x[R]   # return a Matrix where the rows correspond to CORTEX_RIGHT anatomical in
 x[LR]  # return a Matrix where the rows correspond to left or right coritical indices
 ```
 
-Or you can index into the data using a vector of arbitrary BrainStructure keys:
+Or you can index into the data using a vector of arbitrary `BrainStructure` keys:
 ```
 x[[AMYGDALA_LEFT, AMYGDALA_RIGHT]]
 x[[AMYGDALA_RIGHT, AMYGDALA_LEFT]]
 ```
 Important note: order matters in the vector that you specify, so the two lines above will return matrix subsets of the same size but differently sorted.
 
-As of version 1.2, data from a `CiftiStruct` or `Matrix` can be written to disk by specifying a `template`, i.e. an existing CIFTI file that has the desired output space. A copy of `template` will be created on disk, with its data component replaced with the new data that you supply. See the note in the introduction, however, about this function's experimental status, and be sure to verify that outputs are oriented correctly.
+As of version 1.2, data from a `CiftiStruct` or `Matrix` can be written to disk by specifying a `template`, i.e. an existing CIFTI file that has the desired properties. A copy of `template` will be created on disk, with its data component replaced with the new data that you supply. See the note in the introduction, however, about this function's experimental status, and be sure to verify that outputs are oriented correctly.
 ```
 output_path = "my_output_filename.dtseries.nii"
-template_path = "path_to_an_existing_cifti_file.dtseries.nii" # NIFTI-2 header and XML data from this will be copied
+template_path = "path_to_an_existing_cifti_file.dtseries.nii"
 CIFTI.save(output_path, x; template = template_path)
 
 # it also works if you pass a Matrix instead of a CiftiStruct:
-my_matrix = x.data
+my_matrix = randn(Float32, size(x))
 CIFTI.save(output_path, my_matrix; template = template_path)
 ```
 
