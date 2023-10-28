@@ -63,9 +63,7 @@ function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
 	return dimord
 end
 
-function get_brainstructure(
-		docroot::EzXML.Node
-	)::OrderedCollections.OrderedDict{BrainStructure, UnitRange}
+function get_brainstructure(docroot::EzXML.Node)::OrderedDict{BrainStructure, UnitRange}
 	brainmodel_nodes = findall("//BrainModel", docroot)
 	brainstructure = OrderedDict{BrainStructure, UnitRange}()
 	for node in brainmodel_nodes
@@ -130,6 +128,8 @@ function save(dest::String, c::Union{CiftiStruct, AbstractArray}; template::Stri
 		write(fid, matrix_out)
 	end
 end
+
+# below are helpers for save(), to determine whether to transpose a matrix before saving
 
 function compare_mappings(
 		c::CiftiStruct{T1, T2}, template_dimord::Vector{IndexType}, template_dims::Tuple
