@@ -24,7 +24,7 @@ their native format (Float32) vs the 64-bit double-precision used in MATLAB
 ground_truth = load(joinpath(data_dir, "fieldtrip_objects.jld"))
 tol = 1e-6
 
-function test_brainstructure(a::CIFTI.CiftiStruct, b::Dict)
+function test_brainstructure(a::CiftiStruct, b::Dict)
 	if haskey(b, "brainstructure")
 		vals = filter(x -> Int(x) > 0, b["brainstructure"])
 		ks = b["brainstructurelabel"][:]
@@ -59,10 +59,12 @@ end
 
 		tempfile = "temp.$filetype.nii"
 
+		# test that the data doesn't change if you save it out and read it back in
 		CIFTI.save(tempfile, a; template = filename)
 		c = CIFTI.load(tempfile)
 		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
 
+		# as above, but use save just a Matrix instead of a CiftiStruct
 		mat = deepcopy(a.data)
 		CIFTI.save(tempfile, mat; template = filename)
 		c = CIFTI.load(tempfile)
@@ -79,6 +81,7 @@ end
 		inds = .!isfinite.(a.data)
 		a.data[inds] .= 0
 
+		# test that a[::BrainStructure] indexing is equivalent to the more verbose form
 		structs = collect(keys(a.brainstructure))
 		for s in structs
 			@test a[s] == a.data[a.brainstructure[s], :]
