@@ -15,13 +15,7 @@ end
 
 function get_cifti_data(fid::IOStream, hdr::NiftiHeader)
 	seek(fid, hdr.vox_offset)
-	bytes_to_read = hdr.nrows * hdr.ncols * sizeof(hdr.dtype)
-	data = zeros(UInt8, bytes_to_read)
-	readbytes!(fid, data, bytes_to_read)
-	@chain data begin
-		reinterpret(hdr.dtype, _) 
-		reshape(_, (hdr.nrows, hdr.ncols)) 
-	end
+	read!(fid, Matrix{hdr.dtype}(undef, hdr.nrows, hdr.ncols))
 end
 
 function extract_xml(fid::IOStream, hdr::NiftiHeader)::EzXML.Node
