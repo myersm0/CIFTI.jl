@@ -132,9 +132,9 @@ end
 # below are helpers for save(), to determine whether to transpose a matrix before saving
 
 function compare_mappings(
-		c::CiftiStruct{T1, T2}, template_dimord::Vector{IndexType}, template_dims::Tuple
-	)::Matrix where {T1, T2}
-	input_mappings = (MappingStyle(T1), MappingStyle(T2))
+		c::CiftiStruct{E, R, C}, template_dimord::Vector{IndexType}, template_dims::Tuple
+	)::Matrix where {E, R, C}
+	input_mappings = (MappingStyle(R), MappingStyle(C))
 	output_mappings = (MappingStyle(template_dimord[1]), MappingStyle(template_dimord[2]))
 	if input_mappings == output_mappings
 		matrix_out = c.data

@@ -10,7 +10,7 @@ struct SCALARS <: IndexType end
 struct TIME_POINTS <: IndexType end
 struct LABELS <: IndexType end
 # note that LABELS and TIME_POINTS are not mentioned in the specification,
-# but I've found them exists in XML data from various CIFTI files
+# but I've found them in XML data from various CIFTI files
 
 abstract type MappingStyle end
 struct IsSpatialIndex <: MappingStyle end

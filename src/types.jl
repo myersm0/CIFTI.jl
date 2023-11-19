@@ -10,15 +10,16 @@ struct NiftiHeader
 	vox_offset::Int64
 end
 
-struct CiftiStruct{T1, T2}
+# type parameters E, R, C stand for: matrix eltype, row and column interpretations
+struct CiftiStruct{E, R, C}
 	_hdr::NiftiHeader
-	data::Matrix
+	data::Matrix{E}
 	brainstructure::OrderedDict{BrainStructure, UnitRange}
 end
 
-function CiftiStruct{T1, T2}(
+function CiftiStruct{E, R, C}(
 		hdr, data, brainstructure
-	) where {T1 <: IndexType, T2 <: IndexType}
+	) where {E <: Real, R <: IndexType, C <: IndexType}
 	dims = size(data)
 	@assert(hdr.nrows == dims[2], "Expected $(hdr.nrows) rows, found $(dims[2])")
 	@assert(hdr.ncols == dims[1], "Expected $(hdr.ncols) columns, found $(dims[1])")
@@ -29,19 +30,19 @@ function CiftiStruct{T1, T2}(
 			"Max index of brainstructure should match data's spatial dimension size"
 		)
 	end
-	CiftiStruct{T1, T2}(hdr, data, brainstructure)
+	CiftiStruct{E, R, C}(hdr, data, brainstructure)
 end
 
 CiftiStruct(hdr, data, brainstructure, dimord, ::DontTranspose) =
-	CiftiStruct{dimord[1], dimord[2]}(hdr, data, brainstructure)
+	CiftiStruct{hdr.dtype, dimord[1], dimord[2]}(hdr, data, brainstructure)
 	
 CiftiStruct(hdr, data, brainstructure, dimord, ::DoTranspose) =
-	CiftiStruct{dimord[2], dimord[1]}(hdr, transpose(data), brainstructure)
+	CiftiStruct{hdr.dtype, dimord[2], dimord[1]}(hdr, transpose(data), brainstructure)
 
 """
     size(c::CiftiStruct)
 
-Return the dimensions of the data matrix component of a CiftiStruct
+Get the dimensions of the data matrix component of a `CiftiStruct`
 """
 function Base.size(x::CiftiStruct)
 	size(x.data)
@@ -50,19 +51,18 @@ end
 """
     getindex(c::CiftiStruct, s::BrainStructure)
 
-Use BrainStructure s as indices into the data matrix of a CiftiStruct
+Use `BrainStructure` `s` as indices into the data matrix of a `CiftiStruct`
 """
-
 function Base.getindex(
-		c::CiftiStruct{BRAIN_MODELS(), T}, s::BrainStructure
-	) where T
+		c::CiftiStruct{E, BRAIN_MODELS(), C}, s::BrainStructure
+	) where {E, C}
 	inds = haskey(c.brainstructure, s) ? c.brainstructure[s] : []
 	c.data[inds, :]
 end
 
 function Base.getindex(
-		c::CiftiStruct{BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
-	)
+		c::CiftiStruct{E, BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
+	) where E
 	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s1] : []
 	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s2] : []
 	c.data[inds1, inds2]
