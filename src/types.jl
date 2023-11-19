@@ -18,7 +18,9 @@ struct CiftiStruct{E, R, C}
 end
 
 function CiftiStruct{E, R, C}(
-		hdr, data, brainstructure
+		hdr::NiftiHeader, 
+		data::Matrix{E}, 
+		brainstructure::OrderedDict{BrainStructure, UnitRange}
 	) where {E <: Real, R <: IndexType, C <: IndexType}
 	dims = size(data)
 	@assert(hdr.nrows == dims[2], "Expected $(hdr.nrows) rows, found $(dims[2])")
