@@ -79,6 +79,10 @@ function Base.getindex(c::CiftiStruct, s::Vector{BrainStructure})
 	c.data[inds, :]
 end
 
+function Base.getindex(c::CiftiStruct, args...)
+	getindex(c.data, args...)
+end
+
 function Base.show(io::IO, ::MIME"text/plain", cifti::CiftiStruct)
 	display(cifti.data)
 end
