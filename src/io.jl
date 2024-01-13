@@ -115,7 +115,9 @@ function save(dest::String, c::Union{CiftiStruct, AbstractArray}; template::Stri
 	close(fid)
 
 	matrix_out = compare_mappings(c, template_dimord, outdims)
-	eltype(matrix_out) == hdr.dtype || error("Inconsistent matrix eltypes")
+	if eltype(matrix_out) != hdr.dtype
+		matrix_out = convert(Matrix{hdr.dtype}, matrix_out)
+	end
 
 	open(dest, "w") do fid
 		write(fid, header_content)
