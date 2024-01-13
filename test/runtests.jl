@@ -64,11 +64,21 @@ end
 		c = CIFTI.load(tempfile)
 		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
 
-		# as above, but use save just a Matrix instead of a CiftiStruct
+		# as above, but save just a Matrix instead of a CiftiStruct
 		mat = deepcopy(a.data)
 		CIFTI.save(tempfile, mat; template = filename)
 		c = CIFTI.load(tempfile)
 		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
+
+		# as above, but try different matrix eltypes to test conversion (to Float32)
+		types_to_test = [Float16, Float32, Float64, BigFloat]
+		tolerances = [1e-2, 1e-8, 1e-6, 1e-7]
+		for (dtype, tol) in zip(types_to_test, tolerances)
+			mat = convert(Matrix{dtype}, a.data)
+			CIFTI.save(tempfile, mat; template = filename)
+			c = CIFTI.load(tempfile)
+			@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
+		end
 
 		rm(tempfile)
 
