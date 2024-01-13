@@ -1,8 +1,9 @@
 using CIFTI
 using Test
 using JLD
+using Pkg.Artifacts
 
-data_dir = joinpath(dirname(@__FILE__), "data")
+data_dir = artifact"CIFTI_test_files"
 
 files_to_test = [
 	"test.dscalar.nii",
