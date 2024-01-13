@@ -1,6 +1,4 @@
 
-export BrainStructure, L, R, LR
-
 const nifti_hdr_size = 540
 
 # from discourse.julialang.org/t/export-enum/5396

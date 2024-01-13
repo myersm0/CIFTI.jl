@@ -1,6 +1,4 @@
 
-export CiftiStruct, size, getindex
-
 # the below assumes we'll deal with headers of the NIfTI-2 spec;
 # there are many more fields available, but this is sufficient for basic use
 struct NiftiHeader
