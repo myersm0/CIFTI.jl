@@ -2,11 +2,11 @@
 
 This Julia package supplies functions `CIFTI.load` and `CIFTI.save` for reading and writing files of the CIFTI-2 format (https://www.nitrc.org/projects/cifti) for fMRI data, along with some convenience functions for indexing into the data matrix.
 
-The intended use case is for simple, fast reading of CIFTI data. No attempt has been made to comprehensively support the CIFTI specification. For more complex use cases in Julia, I recommend instead using Julia's cross-language interoperability to take advantage of one of several more comprehensive implementations (see the `cifti` and `ciftiTools` R packages, `nibabel` in Python, etc).
+The intended use is for simple, fast reading of CIFTI data. No attempt has been made to comprehensively support the CIFTI specification. For more complex use cases in Julia, I recommend instead using Julia's cross-language interoperability to take advantage of one of several more comprehensive implementations in other languages (see the `cifti` and `ciftiTools` R packages, `nibabel` in Python, etc).
 
 The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized and containing only synthetic data) and I'll add support for it.
 
-Version 1.2 introduces an experimental feature, `CIFTI.save`, to save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk. Due to optional matrix transpositions and to conventions of row major versus column major order, it's tricky to ensure that data is written to disk in the right order and orientation in all cases, so please verify that it works as expected in your environment.
+Version 1.2 introduces `CIFTI.save`, to save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk.
 
 ## Performance
 Due to Julia's column major storage convention, most CIFTI files will need to be transposed in order to store them in the orientation that users will probably expect. If you don't need to transpose, reading is extremely fast, and if you do, performance suffers but it's still quite fast. Here are some benchmarks achieved on my Ubuntu Linux machine:
@@ -15,6 +15,8 @@ Due to Julia's column major storage convention, most CIFTI files will need to be
 |Read a dtseries of size 64k x 8k (w/ transpose) |6 s|
 |Read a dtseries of size 64k x 8k (no transpose) |1 s|
 |Read a dconn of size 59412 x 59412 (no tranpose)|33 s|
+
+But these speeds will largely depend on your hardware. On other systems, I've had the latter operation run as fast as 10 seconds.
 
 ## Installation
 Within Julia:
@@ -55,7 +57,7 @@ x[[AMYGDALA_RIGHT, AMYGDALA_LEFT]]
 ```
 Important note: order matters in the vector that you specify, so the two lines above will return matrix subsets of the same size but differently sorted.
 
-As of version 1.2, data from a `CiftiStruct` or `Matrix` can be written to disk by specifying a `template`, i.e. an existing CIFTI file that has the desired properties. A copy of `template` will be created on disk, with its data component replaced with the new data that you supply. See the note in the introduction, however, about this function's experimental status, and be sure to verify that outputs are oriented correctly.
+As of version 1.2, data from a `CiftiStruct` or `Matrix` can be written to disk by specifying a `template`, i.e. an existing CIFTI file that has the desired properties. A copy of `template` will be created on disk, with its data component replaced with the new data that you supply.
 ```
 output_path = "my_output_filename.dtseries.nii"
 template_path = "path_to_an_existing_cifti_file.dtseries.nii"
