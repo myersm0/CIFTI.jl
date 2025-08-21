@@ -16,24 +16,18 @@ Pkg.add("CIFTI")
 ```
 
 ## Usage
+### Basic usage
 The basic usage of `CIFTI.load` is demonstrated below. A `CiftiStruct` struct is returned, containing:
-- `data`: a numeric matrix of whatever data type is specified in the cifti file header
-- `brainstructure`: an OrderedDict of indices into anatomical structures as parsed from the CIFTI file's internal XML data
+- a numeric matrix of whatever data type is specified in the cifti file header
+- an OrderedDict of indices into anatomical structures as parsed from the CIFTI file's internal XML data
+
+Loading a CIFTI file and accessing its basic elements are demonstated below:
 ```
 x = CIFTI.load(filename)
 data(x)                  # access the data Matrix
-eltype(x)                # get the element type of the data matrix, e.g. Float32
 brainstructure(x)        # access the OrderedDict of anatomical indices
-```
-
-Version 2.0 exposes two new, important properties:
-```
-# get a tuple showing what CIFTI_INDEX_TYPEs the matrix dimensions are meant to represent,
-# e.g. (BRAIN_MODELS, TIME_POINTS)
-index_types(x)
-
-# check if data was transposed during loading (see section below)
-istransposed(x)
+index_types(x)           # get a tuple describing what quantities the matrix dimensions represent
+istransposed(x)          # check if data was transposed during loading (see section below)
 ```
 
 ### Important note about transposition
