@@ -4,7 +4,7 @@ function get_nifti2_hdr(fid::IOStream)::NiftiHeader
 	bytes = zeros(UInt8, nifti_hdr_size)
 	readbytes!(fid, bytes, nifti_hdr_size)
 	test = reinterpret(Int16, bytes[1:2])[1]
-	@assert(test == nifti_hdr_size, "File doesn't seem to follow the NIfTI-2 specs!")
+	test == nifti_hdr_size || error("File doesn't seem to follow the NIfTI-2 specs!")
 	dtype = dtypes[reinterpret(Int16, bytes[13:14])[1]]
 	dims = reinterpret(Int64, bytes[17:80])
 	nrows = dims[6]
@@ -31,7 +31,7 @@ end
 
 function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
 	index_mappings = findall("//MatrixIndicesMap", docroot)
-	@assert length(index_mappings) in (1, 2)
+	length(index_mappings) in (1, 2) || error()
 	dimord = Vector{IndexType}(undef, 2)
 	for node in index_mappings
 		interpretation = 
@@ -81,7 +81,7 @@ Read a CIFTI file. Returns a `CiftiStruct`, composed of the data matrix `data`
 and a dictionary of anatomical indices `brainstructure` for indexing into the data
 """
 function load(filename::String)::CiftiStruct
-	@assert(isfile(filename), "$filename doesn't exist")
+	isfile(filename) || error("$filename doesn't exist")
 	open(filename, "r") do fid
 		hdr = get_nifti2_hdr(fid)
 		data = get_cifti_data(fid, hdr)

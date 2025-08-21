@@ -21,14 +21,11 @@ function CiftiStruct{E, R, C}(
 		brainstructure::OrderedDict{BrainStructure, UnitRange}
 	) where {E <: Real, R <: IndexType, C <: IndexType}
 	dims = size(data)
-	@assert(hdr.nrows == dims[2], "Expected $(hdr.nrows) rows, found $(dims[2])")
-	@assert(hdr.ncols == dims[1], "Expected $(hdr.ncols) columns, found $(dims[1])")
+	hdr.nrows == dims[2] || error("Expected $(hdr.nrows) rows, found $(dims[2])")
+	hdr.ncols == dims[1] || error("Expected $(hdr.ncols) columns, found $(dims[1])")
 	if length(brainstructure) > 0
 		brainstruct_max = brainstructure[collect(keys(brainstructure))[end]][end]
-		@assert(
-			brainstruct_max == dims[1],
-			"Max index of brainstructure should match data's spatial dimension size"
-		)
+		brainstruct_max == dims[1] || error("Max index of brainstructure should match data's spatial dimension size")
 	end
 	CiftiStruct{E, R, C}(hdr, data, brainstructure)
 end
