@@ -12,8 +12,6 @@ files_to_test = [
 	"test.ptseries.nii",
 	"sub-MSC01_test.dtseries.nii"
 ]
-# the latter file is one I found that has brainordinates along the rows
-# so it doesn't need to be transposed
 
 """
 `ground_truth` contains objects generated in MATLAB with the [FieldTrip toolbox]
@@ -43,69 +41,159 @@ function test_brainstructure(a::CiftiStruct, b::Dict)
 end
 
 @testset "CIFTI.jl" begin
-	for filename in files_to_test
-		filename = joinpath(data_dir, filename)
-		filetype = replace(filename, r".*\.([a-z]+).nii$" => s"\1")
-		a = CIFTI.load(filename)
-		inds_a = findall(isfinite.(a.data))
+	@testset "Basic loading and data integrity" begin
+		for (i, filename) in enumerate(files_to_test)
+			filename = joinpath(data_dir, filename)
+			filetype = replace(filename, r".*\.([a-z]+).nii$" => s"\1")
+			a = CIFTI.load(filename)
+			inds_a = findall(isfinite.(a.data))
 
-		# the MSC01 file is not included in the ground_truth jld object
-		if isnothing(match(r"MSC01", filename))
-			b = deepcopy(ground_truth["$(filetype)_test"])
-			@test test_brainstructure(a, b)
-			inds_b = findall(isfinite.(b["data"]))
-			@test inds_a == inds_b
-			@test maximum(abs.(a.data[inds_a] .- b["data"][inds_b])) < tol
-		end
+			# the MSC01 file is not included in the ground_truth jld object
+			if isnothing(match(r"MSC01", filename))
+				b = deepcopy(ground_truth["$(filetype)_test"])
+				@test test_brainstructure(a, b)
+				inds_b = findall(isfinite.(b["data"]))
+				@test inds_a == inds_b
+				@test maximum(abs.(a.data[inds_a] .- b["data"][inds_b])) < tol
+			end
 
-		tempfile = "temp.$filetype.nii"
+			tempfile = "temp.$filetype.nii"
 
-		# test that the data doesn't change if you save it out and read it back in
-		CIFTI.save(tempfile, a; template = filename)
-		c = CIFTI.load(tempfile)
-		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
+			# test that the data doesn't change if you save it out and read it back in
+			CIFTI.save(tempfile, a; template = filename)
+			c = CIFTI.load(tempfile)
+			@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
 
-		# as above, but save just a Matrix instead of a CiftiStruct
-		mat = deepcopy(a.data)
-		CIFTI.save(tempfile, mat; template = filename)
-		c = CIFTI.load(tempfile)
-		@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
-
-		# as above, but try different matrix eltypes to test conversion (to Float32)
-		types_to_test = [Float16, Float32, Float64, BigFloat]
-		tolerances = [1e-2, 1e-8, 1e-6, 1e-7]
-		for (dtype, tol) in zip(types_to_test, tolerances)
-			mat = convert(Matrix{dtype}, a.data)
+			# as above, but save just a Matrix instead of a CiftiStruct
+			mat = deepcopy(a.data)
 			CIFTI.save(tempfile, mat; template = filename)
 			c = CIFTI.load(tempfile)
 			@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
+
+			# as above, but try different matrix eltypes to test conversion (to Float32)
+			types_to_test = [Float16, Float32, Float64, BigFloat]
+			tolerances = [1e-2, 1e-8, 1e-6, 1e-7]
+			for (dtype, tol) in zip(types_to_test, tolerances)
+				mat = convert(Matrix{dtype}, a.data)
+				CIFTI.save(tempfile, mat; template = filename)
+				c = CIFTI.load(tempfile)
+				@test maximum(abs.(c.data[inds_a] .- a.data[inds_a])) < tol
+			end
+
+			rm(tempfile)
+
+			@test size(a) == size(a.data)
+			if filetype in ["dtseries", "dscalar", "dlabel"]
+				@test size(a[LR], 1) == size(a[L], 1) + size(a[R], 1) == 59412
+			end
+
+			# for convenience in below tests, remove NaNs now
+			inds = .!isfinite.(a.data)
+			a.data[inds] .= 0
+
+			# test that a[::BrainStructure] indexing is equivalent to the more verbose form
+			structs = collect(keys(a.brainstructure))
+			for s in structs
+				@test a[s] == a.data[a.brainstructure[s], :]
+			end
+
+			# pick out a "random" set of structs to verify that vectorized indexing works
+			structs = intersect(structs, [CEREBELLUM_RIGHT, L, AMYGDALA_RIGHT])
+			if length(structs) == 0
+				inds = []
+			else
+				inds = union([a.brainstructure[s] for s in structs]...)
+			end
+			if length(structs) > 0
+				@test a[structs] == a.data[inds, :]
+			end
 		end
+	end
 
-		rm(tempfile)
+	@testset "Accessor functions" begin
+		filename = joinpath(data_dir, "test.dtseries.nii")
+		c = CIFTI.load(filename)
+		
+		@test data(c) === c.data
+		@test brainstructure(c) === c.brainstructure
+		@test eltype(c) == Float32
+		@test istransposed(c) == true
+		
+		it = index_types(c)
+		@test length(it) == 2
+		@test it[1] <: CIFTI.IndexType
+		@test it[2] <: CIFTI.IndexType
+		
+		@test it[1] <: CIFTI.BRAIN_MODELS
+		@test it[2] <: CIFTI.SERIES
+	end
 
-		@test size(a) == size(a.data)
-		if filetype in ["dtseries", "dscalar", "dlabel"]
-			@test size(a[LR], 1) == size(a[L], 1) + size(a[R], 1) == 59412
+	@testset "Error handling" begin
+		@test_throws ArgumentError CIFTI.load("nonexistent_file.nii")
+		
+		@test_throws ArgumentError CIFTI.save(
+			"/nonexistent/dir/output.nii", 
+			zeros(Float32, 10, 10); 
+			template = joinpath(data_dir, "test.dscalar.nii")
+		)
+		
+		@test_throws ArgumentError CIFTI.save(
+			"output.nii", 
+			zeros(Float32, 10, 10); 
+			template = "nonexistent_template.nii"
+		)
+		
+		filename = joinpath(data_dir, "test.dtseries.nii")
+		c = CIFTI.load(filename)
+		@test_throws ArgumentError c[BrainStructure[]]
+		
+		if !haskey(c.brainstructure, CIFTI.OTHER)
+			@test_throws KeyError c[CIFTI.OTHER]
 		end
+		
+		wrong_dims = zeros(Float32, 10, 10)
+		@test_throws DimensionMismatch CIFTI.save(
+			"output.dtseries.nii", 
+			wrong_dims; 
+			template = filename
+		)
+	end
 
-		# for convenience in below tests, remove NaNs now
-		inds = .!isfinite.(a.data)
-		a.data[inds] .= 0
-
-		# test that a[::BrainStructure] indexing is equivalent to the more verbose form
-		structs = collect(keys(a.brainstructure))
-		for s in structs
-			@test a[s] == a.data[a.brainstructure[s], :]
+	@testset "BrainStructure lookup" begin
+		for bs in instances(BrainStructure)
+			@test haskey(CIFTI.brain_structure_lookup, String(Symbol(bs)))
 		end
+		@test CIFTI.brain_structure_lookup["CORTEX_LEFT"] == CORTEX_LEFT
+		@test CIFTI.brain_structure_lookup["CORTEX_RIGHT"] == CORTEX_RIGHT
+	end
 
-		# pick out a "random" set of structs to verify that vectorized indexing works
-		structs = intersect(structs, [CEREBELLUM_RIGHT, L, AMYGDALA_RIGHT])
-		if length(structs) == 0
-			inds = []
-		else
-			inds = union([a.brainstructure[s] for s in structs]...)
+	@testset "Transposition logic" begin
+		dtseries_file = joinpath(data_dir, "test.dtseries.nii")
+		dtseries = CIFTI.load(dtseries_file)
+		@test istransposed(dtseries)
+		
+		pconn_file = joinpath(data_dir, "test.pconn.nii")
+		pconn = CIFTI.load(pconn_file)
+		@test !istransposed(pconn)
+		
+		# verify index types make sense after transposition
+		dt_types = index_types(dtseries)
+		@test dt_types[1] <: CIFTI.BRAIN_MODELS  # spatial on rows after transpose
+		@test dt_types[2] <: CIFTI.SERIES  # time on columns after transpose
+	end
+
+	@testset "Edge cases" begin
+		# test with parcellated data (no brainstructure)
+		pconn_file = joinpath(data_dir, "test.pconn.nii")
+		pconn = CIFTI.load(pconn_file)
+		
+		# parcellated files typically have empty brainstructure
+		if isempty(pconn.brainstructure)
+			@test_throws ArgumentError pconn[CORTEX_LEFT]
 		end
-		@test a[structs] == a.data[inds, :]
+		
+		@test size(pconn) == size(pconn.data)
+		@test length(size(pconn)) == 2
 	end
 end
 
