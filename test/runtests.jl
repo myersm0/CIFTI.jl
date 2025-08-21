@@ -105,7 +105,9 @@ end
 		else
 			inds = union([a.brainstructure[s] for s in structs]...)
 		end
-		@test a[structs] == a.data[inds, :]
+		if length(structs) > 0
+			@test a[structs] == a.data[inds, :]
+		end
 	end
 end
 

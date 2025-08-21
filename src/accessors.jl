@@ -16,16 +16,10 @@ Use BrainStructure `s` as indices into the data matrix of a CiftiStruct `c`.
 function Base.getindex(
 		c::CiftiStruct{E, BRAIN_MODELS(), C}, s::BrainStructure
 	) where {E, C}
-	inds = haskey(c.brainstructure, s) ? c.brainstructure[s] : []
-	c.data[inds, :]
-end
-
-function Base.getindex(
-		c::CiftiStruct{E, BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
-	) where E
-	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s1] : []
-	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s2] : []
-	c.data[inds1, inds2]
+	haskey(brainstructure(c), s) && return data(c)[brainstructure(c)[s], :]
+	available = collect(keys(c.brainstructure))
+	isempty(available) && throw(ArgumentError("no brain structures present"))
+	throw(KeyError("BrainStructure $s not found. Available: $(join(available, ", "))"))
 end
 
 """
@@ -34,13 +28,24 @@ end
 Use a vector of BrainStructure `s` as indices into the data matrix of a CiftiStruct `c`.
 """
 function Base.getindex(c::CiftiStruct, s::Vector{BrainStructure})
+	isempty(s) && throw(ArgumentError("cannot index with empty BrainStructure vector"))
 	structs = intersect(keys(c.brainstructure), s)
-	inds = length(structs) == 0 ? [] : union([c.brainstructure[x] for x in s]...)
-	c.data[inds, :]
+	isempty(structs) && throw(KeyError("none of the requested structures found"))
+	inds = union([c.brainstructure[x] for x in s]...)
+	data(c)[inds, :]
 end
 
+function Base.getindex(
+		c::CiftiStruct{E, BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
+	) where E
+	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s1] : []
+	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s2] : []
+	data(c)[inds1, inds2]
+end
+
+
 function Base.getindex(c::CiftiStruct, args...)
-	getindex(c.data, args...)
+	getindex(data(c), args...)
 end
 
 
