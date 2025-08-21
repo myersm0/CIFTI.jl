@@ -2,7 +2,7 @@
 """
     size(c::CiftiStruct)
 
-Get the dimensions of the data matrix component of a `CiftiStruct`
+Get the dimensions of the data matrix component of a CiftiStruct `c`.
 """
 function Base.size(x::CiftiStruct)
 	size(x.data)
@@ -11,7 +11,7 @@ end
 """
     getindex(c::CiftiStruct, s::BrainStructure)
 
-Use `BrainStructure` `s` as indices into the data matrix of a `CiftiStruct`
+Use BrainStructure `s` as indices into the data matrix of a CiftiStruct `c`.
 """
 function Base.getindex(
 		c::CiftiStruct{E, BRAIN_MODELS(), C}, s::BrainStructure
@@ -31,7 +31,7 @@ end
 """
     getindex(c::CiftiStruct, s::Vector{BrainStructure})
 
-Use a vector of BrainStructure s as indices into the data matrix of a CiftiStruct
+Use a vector of BrainStructure `s` as indices into the data matrix of a CiftiStruct `c`.
 """
 function Base.getindex(c::CiftiStruct, s::Vector{BrainStructure})
 	structs = intersect(keys(c.brainstructure), s)
@@ -81,7 +81,7 @@ data(c::CiftiStruct) = c.data
 """
     brainstructure(c::CiftiStruct)
 
-Access the dictionary in `c` that describes the mapping of spatial indices to `CIFTI_BRAINSTRUCTURE`s.
+Access the dictionary in `c` that describes the mapping of spatial indices to CIFTI_BRAINSTRUCTUREs.
 """
 brainstructure(c::CiftiStruct) = c.brainstructure
 
