@@ -13,12 +13,14 @@ struct CiftiStruct{E, R, C}
 	_hdr::NiftiHeader
 	data::Matrix{E}
 	brainstructure::OrderedDict{BrainStructure, UnitRange}
+	transposed::Bool
 end
 
 function CiftiStruct{E, R, C}(
 		hdr::NiftiHeader, 
 		data::Matrix{E}, 
-		brainstructure::OrderedDict{BrainStructure, UnitRange}
+		brainstructure::OrderedDict{BrainStructure, UnitRange},
+		transposed::Bool
 	) where {E <: Real, R <: IndexType, C <: IndexType}
 	dims = size(data)
 	hdr.nrows == dims[2] || error("Expected $(hdr.nrows) rows, found $(dims[2])")
@@ -27,14 +29,14 @@ function CiftiStruct{E, R, C}(
 		brainstruct_max = brainstructure[collect(keys(brainstructure))[end]][end]
 		brainstruct_max == dims[1] || error("Max index of brainstructure should match data's spatial dimension size")
 	end
-	CiftiStruct{E, R, C}(hdr, data, brainstructure)
+	CiftiStruct{E, R, C}(hdr, data, brainstructure, transposed)
 end
 
 CiftiStruct(hdr, data, brainstructure, dimord, ::DontTranspose) =
-	CiftiStruct{hdr.dtype, dimord[1], dimord[2]}(hdr, data, brainstructure)
+	CiftiStruct{hdr.dtype, dimord[1], dimord[2]}(hdr, data, brainstructure, false)
 	
 CiftiStruct(hdr, data, brainstructure, dimord, ::DoTranspose) =
-	CiftiStruct{hdr.dtype, dimord[2], dimord[1]}(hdr, transpose(data), brainstructure)
+	CiftiStruct{hdr.dtype, dimord[2], dimord[1]}(hdr, transpose(data), brainstructure, true)
 
 """
     size(c::CiftiStruct)
