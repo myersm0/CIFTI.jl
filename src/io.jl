@@ -40,7 +40,7 @@ function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
 	dimord = Vector{IndexType}(undef, 2)
 	for node in index_mappings
 		temp = replace(node["IndicesMapToDataType"], r"CIFTI_INDEX_TYPE_" => "")
-		haskey(index_type_lookup, temp) || error("Unrecognized IndexType $temp")
+		haskey(index_type_lookup, temp) || throw(CiftiFormatError("Unrecognized IndexType $temp"))
 		interpretation = index_type_lookup[temp]
 		temp = node["AppliesToMatrixDimension"]
 		if temp == "0,1" # if both dimensions are specified at once ...
@@ -52,7 +52,7 @@ function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
 				applies_to = parse(Int, temp) + 1
 				dimord[applies_to] = interpretation()
 			catch
-				error("Unable to parse dimension order")
+				throw(CiftiFormatError("unable to parse dimension order"))
 			end
 		end
 	end
@@ -79,7 +79,7 @@ function get_brainstructure(docroot::EzXML.Node)::OrderedDict{BrainStructure, Un
 			brainstructure[struct_name] = start:stop
 		catch e
 			if e isa ArgumentError
-				throw(CiftiFormatError("Invalid index values in BrainModel node: $(e.msg)"))
+				throw(CiftiFormatError("invalid index values in BrainModel node: $(e.msg)"))
 			else
 				rethrow()
 			end
@@ -109,7 +109,7 @@ function load(filename::String)::CiftiStruct
 			out = CiftiStruct(hdr, data, brainstructure, dimord, TranspositionStyle(dimord...))
 		catch e
 			if e isa CiftiFormatError
-				throw(CiftiFormatError("Error reading $filename: $(e.msg)"))
+				throw(CiftiFormatError("error reading $filename: $(e.msg)"))
 			else
 				rethrow()
 			end
@@ -130,10 +130,10 @@ input data.
 Instead of a `CiftiStruct`, argument `c` may also be a `Vector` or `Matrix`.
 """
 function save(dest::String, c::Union{CiftiStruct, AbstractArray}; template::String)
-	isfile(template) || throw(ArgumentError("Template file does not exist: $template"))
+	isfile(template) || throw(ArgumentError("template file does not exist: $template"))
 	dest_dir = dirname(dest)
 	if !isempty(dest_dir) && !isdir(dest_dir)
-		throw(ArgumentError("Output directory does not exist: $dest_dir"))
+		throw(ArgumentError("output directory does not exist: $dest_dir"))
 	end
 	
 	local hdr, xml, template_dimord, header_content
@@ -146,7 +146,7 @@ function save(dest::String, c::Union{CiftiStruct, AbstractArray}; template::Stri
 			header_content = read(fid, hdr.vox_offset)
 		catch e
 			if e isa CiftiFormatError
-				throw(CiftiFormatError("Invalid template file $template: $(e.msg)"))
+				throw(CiftiFormatError("invalid template file $template: $(e.msg)"))
 			else
 				rethrow()
 			end
@@ -161,7 +161,7 @@ function save(dest::String, c::Union{CiftiStruct, AbstractArray}; template::Stri
 			matrix_out = convert(Matrix{hdr.dtype}, matrix_out)
 		catch e
 			throw(ArgumentError(
-				"Cannot convert data from $(eltype(matrix_out)) to $(hdr.dtype): $(e)"
+				"cannot convert data from $(eltype(matrix_out)) to $(hdr.dtype): $(e)"
 			))
 		end
 	end
@@ -191,7 +191,7 @@ function compare_mappings(
 	elseif input_mappings == reverse(output_mappings)
 		matrix_out = c.data'
 	else
-		error("Dimension mappings of outmap are inconsistent with template")
+		throw(DimensionMismatch("dimension mappings of outmap are inconsistent with template"))
 	end
 	outdims = size(matrix_out)
 	if outdims == template_dims
