@@ -8,7 +8,7 @@ The `CIFTI.load` function supplied here should work for any of the common CIFTI 
 
 Version 1.2 introduces `CIFTI.save`, to save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk.
 
-## A cautionary note about transposition of matrices
+## Performance
 Due to Julia's column major storage convention, most CIFTI files will need to be transposed in order to store them in the orientation that users will probably expect. If you don't need to transpose, reading is extremely fast, and if you do, performance suffers but it's still quite fast. Here are some benchmarks achieved on my Ubuntu Linux machine:
 |                                                |    |
 |------------------------------------------------|---:|
@@ -32,20 +32,29 @@ The basic usage of `CIFTI.load` is demonstrated below. A `CiftiStruct` struct is
 ```
 x = CIFTI.load(filename)
 data(x)                  # access the data Matrix
+eltype(x)                # get the element type of the data matrix, e.g. Float32
 brainstructure(x)        # access the OrderedDict of anatomical indices
-eltype(x)                # get the data type (e.g., Float32)
-index_types(x)           # get a tuple of (row_type, col_type), e.g. (BRAIN_MODELS, TIME_POINTS)
-istransposed(x)          # check if data was transposed during loading
 ```
 
+Version 2.0 exposes two new, important properties:
+```
+# get a tuple showing what CIFTI_INDEX_TYPEs the matrix dimensions are meant to represent,
+# e.g. (BRAIN_MODELS, TIME_POINTS)
+index_types(x)
+
+# check if data was transposed during loading (see section below):
+istransposed(x)
+```
+
+### Important note about transposition
 When reading in a CIFTI file, transposition will occur or not occur according to the following logic: 
 - If the file is stored on disk with spatial dimensions (either parcels or "grayordinates") along the columns but scalars or series elements along the rows (such as timepoints), the data matrix will be transposed for the sake of consistent representation.
 - If the rows and columns *both* represent spatial elements, such as in connectivity matrices (pconns and dconns), then no transposition will be done, in part to avoid the cost of transposing large data in those cases. It is expected in these cases that you'll have a symmetric connectivity matrix, so transposition will not matter; but if this does not hold true for you for some reason, then pay attention to the orientation and make sure to do any transposing yourself if necessary.
 
 In other words: data will be transposed if it's necessary in order to ensure that there's a spatial mapping along the *rows*, so that indexing can occur in a consistent manner.
 
-Some convenience functions for indexing into `data` are also supplied, taking advantage of the `BrainStructure` enum types that constitute the keys of the `CiftiStruct.brainstructure` dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively.
-
+### Indexing conveniences
+Some convenience functions for indexing into the data matrix are also supplied, taking advantage of the `BrainStructure` enum types that constitute the keys of the `brainstructure` dictionary. Constants `L`, `R`, and `LR` are supplied as a short-hand for `CORTEX_LEFT`, `CORTEX_RIGHT`, and `[CORTEX_LEFT, CORTEX_RIGHT]`, respectively:
 ```
 x[L]   # return a Matrix where the rows correspond to CORTEX_LEFT anatomical indices
 x[R]   # return a Matrix where the rows correspond to CORTEX_RIGHT anatomical indices
@@ -59,7 +68,7 @@ x[[AMYGDALA_RIGHT, AMYGDALA_LEFT]]
 ```
 Important note: order matters in the vector that you specify, so the two lines above will return matrix subsets of the same size but differently sorted.
 
-As of version 1.2, data from a `CiftiStruct` or `Matrix` can be written to disk by specifying a `template`, i.e. an existing CIFTI file that has the desired properties. A copy of `template` will be created on disk, with its data component replaced with the new data that you supply.
+Data from a `CiftiStruct` or `Matrix` can be written to disk by specifying a `template`, i.e. an existing CIFTI file that has the desired output properties. A _copy_ of `template` will be created on disk, with its data component replaced with the new data that you supply.
 ```
 output_path = "my_output_filename.dtseries.nii"
 template_path = "path_to_an_existing_cifti_file.dtseries.nii"
