@@ -8,16 +8,6 @@ The `CIFTI.load` function supplied here should work for any of the common CIFTI 
 
 Version 1.2 introduces `CIFTI.save`, to save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk.
 
-## Performance
-Due to Julia's column major storage convention, most CIFTI files will need to be transposed in order to store them in the orientation that users will probably expect. If you don't need to transpose, reading is extremely fast, and if you do, performance suffers but it's still quite fast. Here are some benchmarks achieved on my Ubuntu Linux machine:
-|                                                |    |
-|------------------------------------------------|---:|
-|Read a dtseries of size 64k x 8k (w/ transpose) |6 s|
-|Read a dtseries of size 64k x 8k (no transpose) |1 s|
-|Read a dconn of size 59412 x 59412 (no tranpose)|33 s|
-
-But these speeds will largely depend on your hardware. On other systems, I've had the latter operation run as fast as 10 seconds.
-
 ## Installation
 Within Julia:
 ```
@@ -78,6 +68,16 @@ CIFTI.save(output_path, x; template = template_path)
 my_matrix = randn(Float32, size(x))
 CIFTI.save(output_path, my_matrix; template = template_path)
 ```
+
+## Performance
+Due to Julia's column major storage convention, most CIFTI files will need to be transposed in order to store them in the orientation that users will probably expect. If you don't need to transpose, reading is extremely fast, and if you do, performance suffers but it's still quite fast. Here are some benchmarks achieved on my Ubuntu Linux machine:
+|                                                |    |
+|------------------------------------------------|---:|
+|Read a dtseries of size 64k x 8k (w/ transpose) |6 s|
+|Read a dtseries of size 64k x 8k (no transpose) |1 s|
+|Read a dconn of size 59412 x 59412 (no tranpose)|33 s|
+
+But these speeds will largely depend on your hardware. On other systems, I've had the latter operation run as fast as 10 seconds.
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://myersm0.github.io/CIFTI.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://myersm0.github.io/CIFTI.jl/dev/)
