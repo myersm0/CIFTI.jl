@@ -2,7 +2,7 @@
 
 This Julia package supplies functions `CIFTI.load` and `CIFTI.save` for reading and writing files of the CIFTI-2 format (https://www.nitrc.org/projects/cifti) for fMRI data, along with some convenience functions for indexing into the data matrix.
 
-The intended use is for simple, fast reading of CIFTI data. No attempt has been made to comprehensively support the CIFTI specification. For more complex use cases in Julia, I recommend instead using Julia's cross-language interoperability to take advantage of one of several more comprehensive implementations in other languages (see the `cifti` and `ciftiTools` R packages, `nibabel` in Python, etc).
+The intended use is for simple, fast reading of CIFTI data. No attempt has been made to comprehensively support the CIFTI specification.
 
 The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized and containing only synthetic data) and I'll add support for it.
 
