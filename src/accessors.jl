@@ -1,5 +1,56 @@
 
+"""
+    size(c::CiftiStruct)
+
+Get the dimensions of the data matrix component of a `CiftiStruct`
+"""
+function Base.size(x::CiftiStruct)
+	size(x.data)
+end
+
+"""
+    getindex(c::CiftiStruct, s::BrainStructure)
+
+Use `BrainStructure` `s` as indices into the data matrix of a `CiftiStruct`
+"""
+function Base.getindex(
+		c::CiftiStruct{E, BRAIN_MODELS(), C}, s::BrainStructure
+	) where {E, C}
+	inds = haskey(c.brainstructure, s) ? c.brainstructure[s] : []
+	c.data[inds, :]
+end
+
+function Base.getindex(
+		c::CiftiStruct{E, BRAIN_MODELS(), BRAIN_MODELS()}, s1::BrainStructure, s2::BrainStructure
+	) where E
+	inds1 = haskey(c.brainstructure, s1) ? c.brainstructure[s1] : []
+	inds2 = haskey(c.brainstructure, s2) ? c.brainstructure[s2] : []
+	c.data[inds1, inds2]
+end
+
+"""
+    getindex(c::CiftiStruct, s::Vector{BrainStructure})
+
+Use a vector of BrainStructure s as indices into the data matrix of a CiftiStruct
+"""
+function Base.getindex(c::CiftiStruct, s::Vector{BrainStructure})
+	structs = intersect(keys(c.brainstructure), s)
+	inds = length(structs) == 0 ? [] : union([c.brainstructure[x] for x in s]...)
+	c.data[inds, :]
+end
+
+function Base.getindex(c::CiftiStruct, args...)
+	getindex(c.data, args...)
+end
+
+
+"""
+	 eltype(c::CiftiStruct)
+
+Get the numeric element type of the data matrix belonging to `c`.
+"""
 Base.eltype(c::CiftiStruct{E, R, C}) where {E, R, C} = E
+
 
 """
     index_types(c::CiftiStruct)
@@ -44,4 +95,5 @@ function Base.show(io::IO, ::MIME"text/plain", cifti::CiftiStruct)
 		println(io, "  structures:       $(join(keys(brainstructure(cifti)), ", "))")
 	end
 end
+
 
