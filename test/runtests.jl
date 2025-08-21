@@ -12,8 +12,6 @@ files_to_test = [
 	"test.ptseries.nii",
 	"sub-MSC01_test.dtseries.nii"
 ]
-# the latter file is one I found that has brainordinates along the rows
-# so it doesn't need to be transposed
 
 """
 `ground_truth` contains objects generated in MATLAB with the [FieldTrip toolbox]
@@ -43,11 +41,13 @@ function test_brainstructure(a::CiftiStruct, b::Dict)
 end
 
 @testset "CIFTI.jl" begin
-	for filename in files_to_test
+	for (i, filename) in enumerate(files_to_test)
 		filename = joinpath(data_dir, filename)
 		filetype = replace(filename, r".*\.([a-z]+).nii$" => s"\1")
 		a = CIFTI.load(filename)
 		inds_a = findall(isfinite.(a.data))
+		@test eltype(a) == Float32
+		@test istransposed(a) == (i != 3) # only file #3 needs to be transposed
 
 		# the MSC01 file is not included in the ground_truth jld object
 		if isnothing(match(r"MSC01", filename))
