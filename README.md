@@ -6,7 +6,7 @@ The intended use is for simple, fast reading of CIFTI data. No attempt has been 
 
 The `CIFTI.load` function supplied here should work for any of the common CIFTI filetypes (dtseries, dscalar, ptseries, dconn, etc). If you have a CIFTI filetype that's not supported, please send me a sample (anonymized and containing only synthetic data) and I'll add support for it.
 
-Version 1.2 introduces `CIFTI.save`, to save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk.
+`CIFTI.save` will save data out (either from a `CiftiStruct` or simply from a `Matrix`) to a copy of an existing CIFTI file on disk.
 
 ## Installation
 Within Julia:
@@ -32,7 +32,7 @@ Version 2.0 exposes two new, important properties:
 # e.g. (BRAIN_MODELS, TIME_POINTS)
 index_types(x)
 
-# check if data was transposed during loading (see section below):
+# check if data was transposed during loading (see section below)
 istransposed(x)
 ```
 
