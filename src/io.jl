@@ -2,14 +2,18 @@
 function get_nifti2_hdr(fid::IOStream)::NiftiHeader
 	seek(fid, 0)
 	bytes = zeros(UInt8, nifti_hdr_size)
-	readbytes!(fid, bytes, nifti_hdr_size)
+	bytes_read = readbytes!(fid, bytes, nifti_hdr_size)
+	bytes_read == nifti_hdr_size || throw(EOFError("file too small to contain NIfTI-2 header"))
 	test = reinterpret(Int16, bytes[1:2])[1]
-	test == nifti_hdr_size || error("File doesn't seem to follow the NIfTI-2 specs!")
-	dtype = dtypes[reinterpret(Int16, bytes[13:14])[1]]
+	test == nifti_hdr_size || throw(CiftiFormatError("invalid NIfTI-2 header: expected magic number $nifti_hdr_size, got $test"))
+	dtype_code = reinterpret(Int16, bytes[13:14])[1]
+	haskey(dtypes, dtype_code) || throw(CiftiFormatError("unsupported data type code: $dtype_code"))
+	dtype = dtypes[dtype_code]
 	dims = reinterpret(Int64, bytes[17:80])
 	nrows = dims[6]
 	ncols = dims[7]
 	vox_offset = reinterpret(Int64, bytes[169:176])[1]
+	vox_offset >= nifti_hdr_size || throw(CiftiFormatError("invalid vox_offset: $vox_offset (must be >= $nifti_hdr_size)"))
 	NiftiHeader(dtype, nrows, ncols, vox_offset)
 end
 
@@ -31,7 +35,8 @@ end
 
 function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
 	index_mappings = findall("//MatrixIndicesMap", docroot)
-	length(index_mappings) in (1, 2) || error()
+	n_mappings = length(index_mappings)
+	n_mappings in (1, 2) || error("expected 1 or 2 index mappings, not $n_mappings")
 	dimord = Vector{IndexType}(undef, 2)
 	for node in index_mappings
 		temp = replace(node["IndicesMapToDataType"], r"CIFTI_INDEX_TYPE_" => "")
@@ -58,12 +63,27 @@ function get_brainstructure(docroot::EzXML.Node)::OrderedDict{BrainStructure, Un
 	brainmodel_nodes = findall("//BrainModel", docroot)
 	brainstructure = OrderedDict{BrainStructure, UnitRange}()
 	for node in brainmodel_nodes
+		if !haskey(node, "BrainStructure")
+			@warn "BrainModel node missing BrainStructure attribute, skipping"
+			continue
+		end
 		temp = replace(node["BrainStructure"], r"CIFTI_STRUCTURE_" => "")
-		haskey(brain_structure_lookup, temp) || error("Unrecognized BrainStructure $temp")
+		haskey(brain_structure_lookup, temp) || throw(CiftiFormatError("unknown structure $temp"))
 		struct_name = brain_structure_lookup[temp]
-		start = parse(Int, node["IndexOffset"]) + 1
-		stop = start + parse(Int, node["IndexCount"]) - 1
-		brainstructure[struct_name] = start:stop
+		# validate numeric parsing
+		try
+			start = parse(Int, node["IndexOffset"]) + 1
+			count = parse(Int, node["IndexCount"])
+			count > 0 || throw(ArgumentError("IndexCount must be positive"))
+			stop = start + count - 1
+			brainstructure[struct_name] = start:stop
+		catch e
+			if e isa ArgumentError
+				throw(CiftiFormatError("Invalid index values in BrainModel node: $(e.msg)"))
+			else
+				rethrow()
+			end
+		end
 	end
 	brainstructure
 end
@@ -71,20 +91,34 @@ end
 """
     load(filename)
 
-Read a CIFTI file. Returns a `CiftiStruct`, composed of the data matrix `data`
-and a dictionary of anatomical indices `brainstructure` for indexing into the data
+Read a CIFTI file from disk.
+
+Returns a `CiftiStruct`, composed of the data matrix `data` and a dictionary of 
+anatomical indices `brainstructure` for indexing into the data
 """
 function load(filename::String)::CiftiStruct
-	isfile(filename) || error("$filename doesn't exist")
+	isfile(filename) || throw(ArgumentError("File does not exist: $filename"))
+	local out
 	open(filename, "r") do fid
-		hdr = get_nifti2_hdr(fid)
-		data = get_cifti_data(fid, hdr)
-		xml = extract_xml(fid, hdr)
-		brainstructure = get_brainstructure(xml)
-		dimord = get_dimord(xml)
-		CiftiStruct(hdr, data, brainstructure, dimord, TranspositionStyle(dimord...))
+		try
+			hdr = get_nifti2_hdr(fid)
+			data = get_cifti_data(fid, hdr)
+			xml = extract_xml(fid, hdr)
+			brainstructure = get_brainstructure(xml)
+			dimord = get_dimord(xml)
+			out = CiftiStruct(hdr, data, brainstructure, dimord, TranspositionStyle(dimord...))
+		catch e
+			if e isa CiftiFormatError
+				throw(CiftiFormatError("Error reading $filename: $(e.msg)"))
+			else
+				rethrow()
+			end
+		end
 	end
+	return out
 end
+
+
 
 """
     save(dest, c; template)
@@ -96,28 +130,54 @@ input data.
 Instead of a `CiftiStruct`, argument `c` may also be a `Vector` or `Matrix`.
 """
 function save(dest::String, c::Union{CiftiStruct, AbstractArray}; template::String)
-	isfile(template) || error("File $template does not exist")
-	fid = open(template, "r")
-	seek(fid, 0)
-	hdr = get_nifti2_hdr(fid)
-	xml = extract_xml(fid, hdr)
-	template_dimord = get_dimord(xml)
-	outdims = (hdr.nrows, hdr.ncols)
-	seek(fid, 0)
-	header_content = zeros(UInt8, hdr.vox_offset)
-	readbytes!(fid, header_content, hdr.vox_offset)
-	close(fid)
-
-	matrix_out = compare_mappings(c, template_dimord, outdims)
-	if eltype(matrix_out) != hdr.dtype
-		matrix_out = convert(Matrix{hdr.dtype}, matrix_out)
+	isfile(template) || throw(ArgumentError("Template file does not exist: $template"))
+	dest_dir = dirname(dest)
+	if !isempty(dest_dir) && !isdir(dest_dir)
+		throw(ArgumentError("Output directory does not exist: $dest_dir"))
 	end
-
-	open(dest, "w") do fid
-		write(fid, header_content)
-		write(fid, matrix_out)
+	
+	local hdr, xml, template_dimord, header_content
+	open(template, "r") do fid
+		try
+			hdr = get_nifti2_hdr(fid)
+			xml = extract_xml(fid, hdr)
+			template_dimord = get_dimord(xml)
+			seek(fid, 0)
+			header_content = read(fid, hdr.vox_offset)
+		catch e
+			if e isa CiftiFormatError
+				throw(CiftiFormatError("Invalid template file $template: $(e.msg)"))
+			else
+				rethrow()
+			end
+		end
+	end
+	
+	outdims = (hdr.nrows, hdr.ncols)
+	matrix_out = compare_mappings(c, template_dimord, outdims)
+	
+	if eltype(matrix_out) != hdr.dtype
+		try
+			matrix_out = convert(Matrix{hdr.dtype}, matrix_out)
+		catch e
+			throw(ArgumentError(
+				"Cannot convert data from $(eltype(matrix_out)) to $(hdr.dtype): $(e)"
+			))
+		end
+	end
+	
+	try
+		open(dest, "w") do fid
+			write(fid, header_content)
+			write(fid, matrix_out)
+		end
+	catch e
+		# try to clean up partial file
+		isfile(dest) && rm(dest, force=true)
+		throw(e)
 	end
 end
+
 
 # below are helpers for save(), to determine whether to transpose a matrix before saving
 
@@ -134,8 +194,11 @@ function compare_mappings(
 		error("Dimension mappings of outmap are inconsistent with template")
 	end
 	outdims = size(matrix_out)
-	outdims == template_dims || error(DimensionMismatch)
-	return matrix_out
+	if outdims == template_dims
+		return matrix_out
+	else
+		throw(DimensionMismatch("cannot write matrix of size $outdims to a $template_dims template"))
+	end
 end
 
 function compare_mappings(
@@ -149,7 +212,7 @@ function compare_mappings(
 	elseif length(input_dims) == 1 && input_dims[1] == prod(template_dims)
 		return reshape(c, (input_dims[1], 1))
 	else
-		error(DimensionMismatch)
+		throw(DimensionMismatch("could not conform input dimensions $input_dims to $template_dims"))
 	end
 end
 

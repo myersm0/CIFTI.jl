@@ -38,3 +38,7 @@ CiftiStruct(hdr, data, brainstructure, dimord, ::DontTranspose) =
 CiftiStruct(hdr, data, brainstructure, dimord, ::DoTranspose) =
 	CiftiStruct{hdr.dtype, dimord[2], dimord[1]}(hdr, transpose(data), brainstructure, true)
 
+struct CiftiFormatError <: Exception
+	msg::String
+end
+
