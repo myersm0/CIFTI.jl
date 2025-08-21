@@ -12,6 +12,16 @@ struct LABELS <: IndexType end
 # note that LABELS and TIME_POINTS are not mentioned in the specification,
 # but I've found them in XML data from various CIFTI files
 
+# helper for parsing from string in XML
+const index_type_lookup = Dict(
+	"BRAIN_MODELS" => BRAIN_MODELS,
+	"PARCELS" => PARCELS,
+	"SERIES" => SERIES,
+	"SCALARS" => SCALARS,
+	"TIME_POINTS" => TIME_POINTS,
+	"LABELS" => LABELS
+)
+
 abstract type MappingStyle end
 struct IsSpatialIndex <: MappingStyle end
 struct IsOtherIndex <: MappingStyle end

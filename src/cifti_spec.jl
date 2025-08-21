@@ -38,6 +38,11 @@ const L = CORTEX_LEFT
 const R = CORTEX_RIGHT
 const LR = [L, R]
 
+# helper for parsing a string into a BrainStructure enum
+const brain_structure_lookup = Dict(
+	string(s) => s for s in instances(BrainStructure)
+)
+
 # dict to map integer codes representing data type found in the nifti2 header
 # (note: not listing certain of those codes that aren't primitive Julia types)
 const dtypes = Dict{Int16, DataType}(

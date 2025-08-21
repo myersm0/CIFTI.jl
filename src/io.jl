@@ -34,12 +34,9 @@ function get_dimord(docroot::EzXML.Node)::Vector{IndexType}
 	length(index_mappings) in (1, 2) || error()
 	dimord = Vector{IndexType}(undef, 2)
 	for node in index_mappings
-		interpretation = 
-			@chain node["IndicesMapToDataType"] begin
-				replace(_, r"CIFTI_INDEX_TYPE_" => "")
-				Meta.parse
-				eval
-			end
+		temp = replace(node["IndicesMapToDataType"], r"CIFTI_INDEX_TYPE_" => "")
+		haskey(index_type_lookup, temp) || error("Unrecognized IndexType $temp")
+		interpretation = index_type_lookup[temp]
 		temp = node["AppliesToMatrixDimension"]
 		if temp == "0,1" # if both dimensions are specified at once ...
 			dimord[1] = interpretation()
@@ -61,12 +58,9 @@ function get_brainstructure(docroot::EzXML.Node)::OrderedDict{BrainStructure, Un
 	brainmodel_nodes = findall("//BrainModel", docroot)
 	brainstructure = OrderedDict{BrainStructure, UnitRange}()
 	for node in brainmodel_nodes
-		struct_name = 
-			@chain node["BrainStructure"] begin
-				replace(_, r"CIFTI_STRUCTURE_" => "")
-				Meta.parse
-				eval
-			end
+		temp = replace(node["BrainStructure"], r"CIFTI_STRUCTURE_" => "")
+		haskey(brain_structure_lookup, temp) || error("Unrecognized BrainStructure $temp")
+		struct_name = brain_structure_lookup[temp]
 		start = parse(Int, node["IndexOffset"]) + 1
 		stop = start + parse(Int, node["IndexCount"]) - 1
 		brainstructure[struct_name] = start:stop
