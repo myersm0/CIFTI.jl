@@ -15,6 +15,9 @@ export CiftiStruct, size, getindex
 # load() and save() are defined here, but not exported for namespace reasons
 include("io.jl")
 
+include("accessors.jl")
+export index_types, istransposed, data, brainstructure
+
 
 end
 

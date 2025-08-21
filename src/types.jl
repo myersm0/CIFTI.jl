@@ -82,7 +82,4 @@ function Base.getindex(c::CiftiStruct, args...)
 	getindex(c.data, args...)
 end
 
-function Base.show(io::IO, ::MIME"text/plain", cifti::CiftiStruct)
-	display(cifti.data)
-end
 
