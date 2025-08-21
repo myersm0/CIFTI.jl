@@ -1,6 +1,6 @@
 # CIFTI
 
-This Julia package supplies functions `CIFTI.load` and `CIFTI.save` for reading and writing files of the CIFTI-2 format (https://www.nitrc.org/projects/cifti) for fMRI data, along with some convenience functions for indexing into the data matrix.
+This Julia package supplies functions `CIFTI.load` and `CIFTI.save` for reading and writing files of the [CIFTI-2 format](https://www.nitrc.org/projects/cifti) for fMRI data, along with some convenience functions for indexing into the data matrix.
 
 The intended use is for simple, fast reading of CIFTI data. No attempt has been made to comprehensively support the CIFTI specification.
 
