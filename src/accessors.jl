@@ -29,8 +29,6 @@ Use a vector of BrainStructure `s` as indices into the data matrix of a CiftiStr
 """
 function Base.getindex(c::CiftiStruct, s::Vector{BrainStructure})
 	isempty(s) && throw(ArgumentError("cannot index with empty BrainStructure vector"))
-	structs = intersect(keys(c.brainstructure), s)
-	isempty(structs) && throw(KeyError("none of the requested structures found"))
 	inds = union([c.brainstructure[x] for x in s]...)
 	data(c)[inds, :]
 end
