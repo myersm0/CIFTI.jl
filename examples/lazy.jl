@@ -21,16 +21,16 @@ my_column_index = 5
 byte_offset = vox_offset + (my_column_index - 1) * m * sizeof(dtype)
 bytes_to_read = sizeof(dtype) * m
 seek(fid, byte_offset)
-temp = Vector{UInt8}(undef, m)  # allocate a temparary vector of bytes
+temp = Vector{UInt8}(undef, bytes_to_read)  # allocate a temparary vector of bytes
 readbytes!(fid, temp, bytes_to_read)  # read bytes from the file into that vector
 my_column_data = reinterpret(dtype, temp)  # convert those bytes to Float32 (or whatever)
 
 close(fid)
 
 # Now for verification, let's try fully loading the cifti file and checking that
-# the respective row/column matches the `my_data` vector that we just retrieved.
+# the respective row/column matches the vector that we just manually retrieved.
 # Note a little complication regarding transposition, however: if CIFTI.jl had
-# to transpose the matrix upon loading, then you need to swap the axis you're that
+# to transpose the matrix upon loading, then you need to swap the axis that
 # you want to test against:
 cifti = CIFTI.load(filename)
 test_data = istransposed(cifti) ? cifti[my_index, :] : cifti[:, my_index]
