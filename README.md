@@ -63,6 +63,9 @@ my_matrix = randn(Float32, size(x))
 CIFTI.save(output_path, my_matrix; template = template_path)
 ```
 
+### Lazy file access
+Lazy loading can be a very useful feature when you have many, large connectivity matrices and/or functional files that would exceed available RAM. While CIFTI.jl does not supply a lazy-loading interface, it's easy to do so yourself with the tools provided by this package. See the demo file `examples/lazy.jl` in this repo for a demonstration.
+
 ## Performance
 Due to Julia's column major storage convention, most CIFTI files will need to be transposed in order to store them in the orientation that users will probably expect. If you don't need to transpose, reading is extremely fast, and if you do, performance suffers but it's still quite fast. Here are some benchmarks achieved on my Ubuntu Linux machine:
 |                                                |    |
