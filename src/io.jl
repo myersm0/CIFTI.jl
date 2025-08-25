@@ -27,8 +27,8 @@ function extract_xml(fid::IOStream, hdr::NiftiHeader)::EzXML.Node
 	seek(fid, nifti_hdr_size)
 	bytes = zeros(UInt8, hdr.vox_offset - nifti_hdr_size)
 	readbytes!(fid, bytes, hdr.vox_offset - nifti_hdr_size)
-	filter!(.!iszero, bytes) # the below will error if we don't remove null bytes
-	chars = Char.(bytes) |> join
+	filter!(!iszero, bytes) # the below will error if we don't remove null bytes
+	chars = String(bytes)
 	start_at = findfirst("<CIFTI Version=", chars)[1]
 	chars[start_at:end] |> parsexml |> root
 end
